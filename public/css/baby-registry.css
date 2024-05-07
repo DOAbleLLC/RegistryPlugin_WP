@@ -1,0 +1,87 @@
+/* Style for the baby registry form and buttons */
+.baby-registry-form {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.baby-registry-form input[type="text"],
+.baby-registry-form textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.baby-registry-form input[type="submit"] {
+    background-color: #9a7d4c;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.baby-registry-form input[type="submit"]:hover {
+    background-color: #cfb393;
+}
+
+.add-to-registry-button {
+    display: inline-block;
+    background-color: #bee630;
+    color: white;
+    padding: 8px 12px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: none;
+    transition: background-color 0.3s ease;
+}
+
+.add-to-registry-button:hover {
+    background-color: #c5fb00;
+}
+
+/* General Styles */
+.baby-registry-container {
+    font-family: Arial, sans-serif; /* Ensuring font consistency */
+    color: #333; /* Suitable for readability */
+    padding: 15px; /* Spacing for layout */
+    border: 1px solid #ddd; /* Subtle bordering */
+}
+
+.baby-registry-button {
+    background-color: #bee630; /* Green background for buttons */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px; /* Rounded corners for buttons */
+}
+
+/* Mobile Specific Styles */
+@media screen and (max-width: 600px) {
+    .baby-registry-container {
+        padding: 10px;
+        font-size: 14px; /* Smaller font for mobile devices */
+    }
+
+    .baby-registry-button {
+        padding: 8px 15px;
+        font-size: 14px; /* Smaller buttons on mobile devices */
+    }
+}
+
+/* Additional styles for specific elements or states can be added below */
