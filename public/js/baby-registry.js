@@ -5,7 +5,7 @@ jQuery(document).ready(function($) {
         var quantity = $('#quantity-input').val();
 
         $.ajax({
-            url: babyRegistryParams.ajaxurl,  // Using localized script parameters
+            url: babyRegistryParams.ajaxurl,
             method: 'POST',
             data: {
                 action: 'add_to_registry_ajax',
@@ -15,7 +15,7 @@ jQuery(document).ready(function($) {
                 _ajax_nonce: babyRegistryParams.nonce  // Using nonce for security
             },
             success: function(response) {
-                if (response.success) {
+                if(response.success) {
                     alert('Product added to the registry!');
                 } else {
                     alert('Error: ' + response.data);
@@ -27,6 +27,7 @@ jQuery(document).ready(function($) {
         });
     });
 });
+
 
 jQuery(document).ready(function($) {
     $(document).on('click', '.delete-registry-button', function() {

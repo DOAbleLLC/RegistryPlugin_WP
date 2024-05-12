@@ -192,7 +192,7 @@ add_shortcode('baby_registry', 'display_baby_registry');
  * get user registries
  */
 
- function get_user_registries() {
+function get_user_registries() {
     global $wpdb;
     $user_id = get_current_user_id();
 
@@ -302,7 +302,7 @@ function add_registry_button_on_product() {
     
     // Dropdown for selecting registry
     if (!empty($registries)) {
-        echo '<select name="registry_id" class="registry-select">';
+        echo '<select id="registry-select" name="registry_id" class="registry-select">';
         foreach ($registries as $registry) {
             echo '<option value="' . esc_attr($registry->registry_id) . '">' . esc_html($registry->registry_name) . '</option>';
         }
@@ -312,10 +312,10 @@ function add_registry_button_on_product() {
     }
 
     // Quantity input
-    echo '<input type="number" name="quantity" class="registry-quantity-input" value="1" min="1" style="margin-right: 5px;">';
+    echo '<input type="number" id="quantity-input" name="quantity" class="registry-quantity-input" value="1" min="1" style="margin-right: 5px;">';
     
     // Add to registry button
-    echo '<button type="button" class="add-to-registry-button" data-product_id="' . esc_attr($product->get_id()) . '">Add to Registry</button>';
+    echo '<button type="button" class="add-to-registry-button" data-product-id="' . esc_attr($product->get_id()) . '">Add to Registry</button>';
     
     // End form
     echo '</form>';
@@ -323,10 +323,19 @@ function add_registry_button_on_product() {
 add_action('woocommerce_after_shop_loop_item', 'add_registry_button_on_product', 20);
 
 
+
 /**
  * AJAX handler for adding items to the registry.
  */
 function add_to_registry_ajax() {
+    global $wpdb;  // Access the global database object
+
+    // Check for nonce security
+    if (!check_ajax_referer('baby_registry_nonce', '_ajax_nonce', false)) {
+        wp_send_json_error('Nonce verification failed.');
+        return;
+    }
+
     $registry_id = isset($_POST['registry_id']) ? intval($_POST['registry_id']) : 0;
     $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
     $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
@@ -336,18 +345,53 @@ function add_to_registry_ajax() {
         return;
     }
 
-    if ($product_id > 0 && $quantity > 0) {
-        $result = add_to_baby_registry($registry_id, $product_id, $quantity);
-        if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message());
-        } else {
-            wp_send_json_success('Item successfully added to registry.');
-        }
-    } else {
-        wp_send_json_error('Failed to add item to the registry.');
+    if ($product_id <= 0 || $quantity <= 0) {
+        wp_send_json_error('Invalid product or quantity specified.');
+        return;
     }
+
+    // Begin a database transaction
+    $wpdb->query('START TRANSACTION');
+
+    // Prepare data to insert into the baby_registry_items table
+    $table_name_items = $wpdb->prefix . 'baby_registry_items';
+    $data = array(
+        'registry_id' => $registry_id,
+        'product_id' => $product_id,
+        'quantity' => $quantity,
+        'purchased' => 0,
+        'purchased_quantity' => 0
+    );
+    $format = array('%d', '%d', '%d', '%d', '%d');
+
+    // Insert data into the database
+    $insert_result = $wpdb->insert($table_name_items, $data, $format);
+
+    if ($insert_result === false) {
+        $wpdb->query('ROLLBACK'); // Rollback the transaction on error
+        wp_send_json_error('Failed to add item to the registry database.');
+        return;
+    }
+
+    // Update items_count in the baby_registry_details table
+    $table_name_details = $wpdb->prefix . 'baby_registry_details';
+    $update_result = $wpdb->query($wpdb->prepare(
+        "UPDATE $table_name_details SET items_count = items_count + 1 WHERE registry_id = %d",
+        $registry_id
+    ));
+
+    if ($update_result === false) {
+        $wpdb->query('ROLLBACK'); // Rollback the transaction on error
+        wp_send_json_error('Failed to update items count.');
+        return;
+    }
+
+    // If all operations are successful, commit the transaction
+    $wpdb->query('COMMIT');
+    wp_send_json_success('Item successfully added to registry and count updated.');
 }
 add_action('wp_ajax_add_to_registry_ajax', 'add_to_registry_ajax');
+
 
 
 /**
@@ -355,7 +399,7 @@ add_action('wp_ajax_add_to_registry_ajax', 'add_to_registry_ajax');
  */
 function baby_registry_scripts() {
     // Enqueue the JavaScript file
-    wp_enqueue_script('baby-registry-js', plugin_dir_url(__FILE__) . 'js/baby-registry.js', array('jquery'), '1.0', true);
+    wp_enqueue_script('baby-registry-js', plugin_dir_url(__FILE__) . 'public/js/baby-registry.js', array('jquery'), '1.0', true);
     
     // Localize the script to pass the AJAX URL and a nonce for security
     wp_localize_script('baby-registry-js', 'babyRegistryParams', [
@@ -364,7 +408,7 @@ function baby_registry_scripts() {
     ]);
 
     // Enqueue the CSS file
-    wp_enqueue_style('baby-registry-css', plugin_dir_url(__FILE__) . 'css/baby-registry.css');
+    wp_enqueue_style('baby-registry-css', plugin_dir_url(__FILE__) . 'public/css/baby-registry.css');
 }
 add_action('wp_enqueue_scripts', 'baby_registry_scripts');
 
