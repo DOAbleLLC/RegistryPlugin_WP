@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce Baby Registry
 Plugin URI: http://metazone.store/
 Description: Enables a baby registry feature for WooCommerce stores.
-Version: 1.0
+Version: 1.1
 Author: Psyscho bit
 */
 
@@ -21,7 +21,7 @@ function baby_registry_activate() {
     $sql_registry_details = "CREATE TABLE $registry_details_table (
         registry_id mediumint(9) NOT NULL AUTO_INCREMENT,
         user_id bigint(20) UNSIGNED NOT NULL,
-        registry_name text NOT NULL,
+        registry_name JSON NOT NULL,
         registry_description text,
         due_date DATE,
         baby_room INT,
@@ -118,50 +118,64 @@ function display_baby_registry($registry_id, $category_filters = []) {
         return '<p>You must be logged in to view registry details.</p>';
     }
 
-    // Fetch the registry name from the database
+    // Fetch the registry details from the database
     $registry_details_table = $wpdb->prefix . "baby_registry_details";
-    $registry_name = $wpdb->get_var($wpdb->prepare(
-        "SELECT registry_name FROM $registry_details_table WHERE registry_id = %d",
+
+    // Fetch registry details
+    $registry = $wpdb->get_row($wpdb->prepare(
+        "SELECT registry_name, user_id FROM $registry_details_table WHERE registry_id = %d",
         $registry_id
     ));
 
-    if (!$registry_name) {
+    if (!$registry) {
         return '<p>Registry not found.</p>'; // Handle case where registry is not found
     }
 
-    $output = '<h3>' . esc_html($registry_name) . '</h3>'; // Display the fetched registry name
+    // Decode the JSON registry name
+    $names = json_decode($registry->registry_name);
+
+    // Determine if there are multiple names or a single name
+    if (is_array($names) && count($names) > 1) {
+        $formatted_names = implode(' and ', array_map('esc_html', $names));
+    } else {
+        $formatted_names = esc_html(is_array($names) ? $names[0] : $names);
+    }
+
+    $output = "<h3>{$formatted_names} baby Registry</h3>"; // Display the formatted registry name
 
     // Show delete button if the logged-in user is the owner of the registry
-if ($registry->user_id == get_current_user_id()) {
-    $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Registry</button>';
-}
+    if ($registry->user_id == get_current_user_id()) {
+        $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Registry</button>';
+    }
 
+    $registry_items_table = $wpdb->prefix . "baby_registry_items";
+    $posts_table = $wpdb->prefix . "posts";
 
-    // Get items filtered by category
-    $items = get_registry_items($registry_id, $category_filters);  // Assume get_registry_items now also takes registry_id
+    // Get registry items
+    $items = $wpdb->get_results($wpdb->prepare(
+        "SELECT p.ID, p.post_title, p.post_excerpt, pm.meta_value AS price
+         FROM $registry_items_table ri
+         JOIN $posts_table p ON p.ID = ri.product_id
+         LEFT JOIN {$wpdb->prefix}postmeta pm ON pm.post_id = p.ID AND pm.meta_key = '_price'
+         WHERE ri.registry_id = %d AND ri.purchased = 0",
+        $registry_id
+    ));
 
     // Check if items exist
     if (!empty($items)) {
         $output .= "<ul>";
         foreach ($items as $product) {
-            if ($product) {
-                $name = esc_html($product->get_name());
-                $short_description = esc_html($product->get_short_description());
-                $price = wc_price($product->get_price());  // Format price with WooCommerce settings
-                $sale_price = $product->get_sale_price() ? wc_price($product->get_sale_price()) : 'N/A';
-                $image_id = $product->get_image_id();
-                $gallery_image_ids = implode(', ', $product->get_gallery_image_ids()); // Converts array to comma-separated string
+            $price = wc_price($product->price); // Format price with WooCommerce settings
 
-                // Format for displaying image; assumes you want to show the main image
-                $image_url = wp_get_attachment_url($image_id);
-                $image_html = $image_url ? "<img src='{$image_url}' alt='{$name}' style='width:100px;' />" : 'No image available';
+            // Get the product image URL
+            $image_id = get_post_thumbnail_id($product->ID);
+            $image_url = wp_get_attachment_url($image_id);
+            $image_html = $image_url ? "<img src='{$image_url}' alt='{$product->post_title}' style='width:100px;' />" : 'No image available';
 
-                $output .= "<li>";
-                $output .= "{$image_html} <strong>{$name}</strong> - {$short_description}<br>";
-                $output .= "Price: {$price} ";
-                $output .= ($sale_price !== 'N/A') ? "Sale Price: {$sale_price} " : "";
-                $output .= "</li>";
-            }
+            $output .= "<li>";
+            $output .= "{$image_html} <strong>" . esc_html($product->post_title) . "</strong> - " . esc_html($product->post_excerpt) . "<br>";
+            $output .= "Price: {$price}";
+            $output .= "</li>";
         }
         $output .= "</ul>";
     } else {
@@ -173,11 +187,12 @@ if ($registry->user_id == get_current_user_id()) {
 
 add_shortcode('baby_registry', 'display_baby_registry');
 
+
 /**
  * get user registries
  */
 
-function get_user_registries() {
+ function get_user_registries() {
     global $wpdb;
     $user_id = get_current_user_id();
 
@@ -193,8 +208,29 @@ function get_user_registries() {
     ));
 
     if (empty($registries)) {
-        // Optionally handle the scenario where no registries are found
-        return [];
+        // Handle the scenario where no registries are found
+        return new WP_Error('no_registry_found', 'User has no registry.');
+    }
+
+    // Decode JSON data in registry_name for each registry and format names
+    foreach ($registries as $registry) {
+        if (!empty($registry->registry_name)) {
+            // Assuming the registry_name is stored as a JSON string
+            $decoded_names = json_decode($registry->registry_name, true);
+            
+            // Format names based on the count
+            if (is_array($decoded_names)) {
+                $formatted_names = count($decoded_names) === 2
+                                   ? implode(' and ', $decoded_names)
+                                   : $decoded_names[0];
+            } else {
+                // Handle non-array data or single name
+                $formatted_names = $decoded_names;
+            }
+
+            // Append "Baby Registry" to the end of the formatted name
+            $registry->registry_name = esc_html($formatted_names) . ' Baby Registry';
+        }
     }
 
     return $registries;
@@ -202,14 +238,32 @@ function get_user_registries() {
 
 
 /**
+ * initialize registry image
+ */
+
+function registry_image($baby_room) {
+    // Static list of image URLs
+    $images = array(
+        plugin_dir_url(__FILE__) . 'public/images/0.jpg',
+        plugin_dir_url(__FILE__) . 'public/images/1.jpg',
+        plugin_dir_url(__FILE__) . 'public/images/2.jpg',
+        plugin_dir_url(__FILE__) . 'public/images/3.jpg'
+    );
+
+    // Use baby_room to index images, ensure it cycles through the array length
+    $index = abs($baby_room) % count($images);  // abs ensures the index is positive
+
+    // Return the image URL
+    return $images[$index];
+}
+
+
+/**
  * Display user registries Shortcode
  */
 
-function display_user_registries() {
+ function display_user_registries() {
     $registries = get_user_registries();
-    if (is_wp_error($registries)) {
-        return '<p>Error: ' . $registries->get_error_message() . '</p>';
-    }
 
     if (empty($registries)) {
         return '<p>No registries found.</p>';
@@ -217,17 +271,20 @@ function display_user_registries() {
 
     $output = '<ul class="user-registries">';
     foreach ($registries as $registry) {
+        $image_url = registry_image($registry->baby_room);  // Get image URL based on baby_room
         $output .= '<li>';
+        $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" style="width:100px;height:auto;">';
         $output .= '<h3>' . esc_html($registry->registry_name) . '</h3>';
         $output .= '<p>Description: ' . esc_html($registry->registry_description) . '</p>';
         $output .= '<p>Due Date: ' . esc_html($registry->due_date) . '</p>';
-        $output .= '<p>Baby Room: ' . intval($registry->baby_room) . '</p>';
+        // Baby room info is not displayed
         $output .= '</li>';
     }
     $output .= '</ul>';
 
     return $output;
 }
+
 add_shortcode('user_registries', 'display_user_registries');
 
 
@@ -245,9 +302,9 @@ function add_registry_button_on_product() {
     
     // Dropdown for selecting registry
     if (!empty($registries)) {
-        echo '<select name="registry_id" class="registry-select" style="margin-right: 5px;">';
+        echo '<select name="registry_id" class="registry-select">';
         foreach ($registries as $registry) {
-            echo '<option value="' . esc_attr($registry->id) . '">' . esc_html($registry->name) . '</option>';
+            echo '<option value="' . esc_attr($registry->registry_id) . '">' . esc_html($registry->registry_name) . '</option>';
         }
         echo '</select>';
     } else {
@@ -334,19 +391,26 @@ function can_create_new_registry($user_id) {
 function create_baby_registry($user_id, $names, $description = '', $due_date = '', $baby_room = 0) {
     global $wpdb;
 
-    // Check if the user can create more registries
+    // Ensure the user can still create new registries
     if (!can_create_new_registry($user_id)) {
         return new WP_Error('registry_limit_reached', 'You have reached the maximum number of registries allowed.');
     }
 
-    // Validate and sanitize input data
+    // Validate input data
     if (empty($user_id) || empty($names)) {
-        return new WP_Error('invalid_data', 'Invalid user ID or registry name.');
+        return new WP_Error('invalid_data', 'Invalid user ID or registry names.');
     }
 
+    // Encode names into JSON and handle possible errors
     $names_json = json_encode($names);
+    if ($names_json === false) {
+        return new WP_Error('json_encoding_error', 'Failed to encode registry names.');
+    }
+
+    // Sanitize and validate input data
     $description = sanitize_textarea_field($description);
     $due_date = sanitize_text_field($due_date);
+    // Optionally, validate due_date format here (e.g., using DateTime)
     $baby_room = (int)$baby_room;
 
     // Insert the new registry into the database
@@ -373,13 +437,51 @@ function create_baby_registry($user_id, $names, $description = '', $due_date = '
 
 
 
+
 /**
  * Shortcode to display form for creating a new registry.
  */
-function display_registry_form() {
-    $output = '<form action="" method="post">';
-    $output .= '<label for="registry_name">Registry Name:</label>';
-    $output .= '<input type="text" id="registry_name" name="registry_name" placeholder="Enter Registry Name" required>';
+
+ function display_registry_form() {
+    $output = '';
+
+    // Handle the POST request
+    if (isset($_POST['submit_registry'])) {
+        $user_id = get_current_user_id();
+        if ($user_id) {
+            // Collect names from multiple fields
+            $names = [];
+            for ($i = 1; $i <= 2; $i++) {
+                if (!empty($_POST["registry_name$i"])) {
+                    $names[] = trim($_POST["registry_name$i"]);
+                }
+            }
+            
+            // Collect additional form data
+            $description = isset($_POST['registry_description']) ? $_POST['registry_description'] : '';
+            $due_date = isset($_POST['due_date']) ? $_POST['due_date'] : '';
+            $baby_room = isset($_POST['baby_room']) ? intval($_POST['baby_room']) : 0;
+    
+            // Call create_baby_registry function
+            $registry_creation_result = create_baby_registry($user_id, $names, $description, $due_date, $baby_room);
+
+            // Check the result and provide feedback
+            if (is_wp_error($registry_creation_result)) {
+                $output .= '<p>Error: ' . $registry_creation_result->get_error_message() . '</p>';
+            } else {
+                $output .= '<p>Registry created successfully! Registry ID: ' . $registry_creation_result . '</p>';
+            }
+        } else {
+            $output .= '<p>You must be logged in to create a registry.</p>';
+        }
+    }
+
+    // Generate the form HTML
+    $output .= '<form action="" method="post">';
+    $output .= '<label for="registry_name1">First Parent Name:</label>';
+    $output .= '<input type="text" id="registry_name1" name="registry_name1" placeholder="Enter Name" required>';
+    $output .= '<label for="registry_name2">Second Parent Name:</label>';
+    $output .= '<input type="text" id="registry_name2" name="registry_name2" placeholder="Enter Name">';
     $output .= '<label for="registry_description">Description:</label>';
     $output .= '<textarea id="registry_description" name="registry_description" placeholder="Enter Registry Description"></textarea>';
     $output .= '<label for="due_date">Due Date:</label>';
@@ -389,28 +491,10 @@ function display_registry_form() {
     $output .= '<input type="submit" name="submit_registry" value="Create Registry">';
     $output .= '</form>';
 
-    if (isset($_POST['submit_registry'])) {
-        $user_id = get_current_user_id();
-        if ($user_id) {
-            $name = isset($_POST['registry_name']) ? $_POST['registry_name'] : '';
-            $description = isset($_POST['registry_description']) ? $_POST['registry_description'] : '';
-            $due_date = isset($_POST['due_date']) ? $_POST['due_date'] : '';
-            $baby_room = isset($_POST['baby_room']) ? intval($_POST['baby_room']) : 0;
-
-            $registry_id = create_baby_registry($user_id, $name, $description, $due_date, $baby_room);
-            if ($registry_id) {
-                $output .= '<p>Registry created successfully!</p>';
-            } else {
-                $output .= '<p>Error creating registry.</p>';
-            }
-        } else {
-            $output .= '<p>You must be logged in to create a registry.</p>';
-        }
-    }
-
     return $output;
 }
 add_shortcode('create_baby_registry_form', 'display_registry_form');
+
 
 
 /**
