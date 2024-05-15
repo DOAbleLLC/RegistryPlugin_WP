@@ -16,8 +16,9 @@ $registry_details_table = $wpdb->prefix . 'baby_registry_details';
 $registry_items_table = $wpdb->prefix . 'baby_registry_items';
 
 // SQL to drop tables
-$sql_registry_details = "DROP TABLE IF EXISTS $registry_details_table;";
 $sql_registry_items = "DROP TABLE IF EXISTS $registry_items_table;";
+$sql_registry_details = "DROP TABLE IF EXISTS $registry_details_table;";
+
 
 // Execute SQL to drop the tables
 $wpdb->query($sql_registry_details);

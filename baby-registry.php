@@ -59,10 +59,9 @@ register_activation_hook(__FILE__, 'baby_registry_activate');
  * Get regisrty items based on product categories
  */
 
- function get_registry_items($registry_id, $category_filters = []) {
+function get_registry_items($registry_id, $category_filters = []) {
     global $wpdb;
 
-    // Check if registry_id is provided and valid
     if (empty($registry_id)) {
         return new WP_Error('invalid_registry', 'No valid registry ID provided.');
     }
@@ -77,16 +76,16 @@ register_activation_hook(__FILE__, 'baby_registry_activate');
         }
     }, $category_filters);
 
-    // Add check to return all items if no category filters are provided
     $category_condition = "";
     if (!empty($category_ids)) {
         $placeholders = implode(',', array_fill(0, count($category_ids), '%d'));
         $category_condition = "AND tt.term_id IN ($placeholders)";
     }
 
-    // Prepare the query to fetch products associated with the specific registry and optionally by categories
+    // Extend the SELECT clause to fetch more details
     $query = $wpdb->prepare("
-        SELECT DISTINCT p.ID, p.post_title FROM {$wpdb->prefix}posts AS p
+        SELECT DISTINCT p.ID, p.post_title, p.post_content, p.guid, tt.term_id
+        FROM {$wpdb->prefix}posts AS p
         JOIN {$wpdb->prefix}term_relationships AS tr ON p.ID = tr.object_id
         JOIN {$wpdb->prefix}term_taxonomy AS tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
         JOIN {$wpdb->prefix}baby_registry_items AS bri ON p.ID = bri.product_id
@@ -97,95 +96,105 @@ register_activation_hook(__FILE__, 'baby_registry_activate');
         array_merge([$registry_id], $category_ids)
     );
 
-    // Execute the query and return the results
     $products = $wpdb->get_results($query);
 
-    // Optionally process results, such as getting more detailed product info
+    if (is_wp_error($products) || empty($products)) {
+        return new WP_Error('no_products', 'No products found for this registry.');
+    }
+
     return array_map(function($product) {
-        return wc_get_product($product->ID);
+        $wc_product = wc_get_product($product->ID);
+        if (!$wc_product) return false;
+        return [
+            'id' => $wc_product->get_id(),
+            'name' => $wc_product->get_name(),
+            'description' => $wc_product->get_description(),
+            'price' => $wc_product->get_price(),
+            'imageUrl' => wp_get_attachment_url($wc_product->get_image_id()),
+            'categories' => wp_get_post_terms($product->ID, 'product_cat', ['fields' => 'names'])
+        ];
     }, $products);
 }
+
 
 
 /**
  * Display the registry 
  */
-function display_baby_registry($registry_id, $category_filters = []) {
+function display_baby_registry($atts) {
     global $wpdb;
 
-    // Check if user is logged in
+    // Set defaults and extract shortcode attributes
+    $attributes = shortcode_atts([
+        'registry_id' => 0,
+        'category_filters' => ''
+    ], $atts);
+
+    // Override shortcode attributes with URL query parameters if they exist
+    $registry_id = empty($_GET['registry_id']) ? intval($attributes['registry_id']) : intval($_GET['registry_id']);
+    $category_filters_from_url = isset($_GET['category_filters']) ? explode(',', sanitize_text_field($_GET['category_filters'])) : [];
+    $category_filters_from_atts = explode(',', sanitize_text_field($attributes['category_filters']));
+    $category_filters = array_filter(array_unique(array_merge($category_filters_from_atts, $category_filters_from_url)));
+
     if (!is_user_logged_in()) {
         return '<p>You must be logged in to view registry details.</p>';
     }
 
-    // Fetch the registry details from the database
-    $registry_details_table = $wpdb->prefix . "baby_registry_details";
-
     // Fetch registry details
+    $registry_details_table = $wpdb->prefix . "baby_registry_details";
     $registry = $wpdb->get_row($wpdb->prepare(
         "SELECT registry_name, user_id FROM $registry_details_table WHERE registry_id = %d",
         $registry_id
     ));
 
     if (!$registry) {
-        return '<p>Registry not found.</p>'; // Handle case where registry is not found
+        return '<p>No Registry found.</p>';
     }
 
-    // Decode the JSON registry name
     $names = json_decode($registry->registry_name);
+    $formatted_names = is_array($names) ? implode(' and ', array_map('esc_html', $names)) : esc_html($names);
+    $output = "<h3>{$formatted_names} Baby Registry</h3>";
 
-    // Determine if there are multiple names or a single name
-    if (is_array($names) && count($names) > 1) {
-        $formatted_names = implode(' and ', array_map('esc_html', $names));
-    } else {
-        $formatted_names = esc_html(is_array($names) ? $names[0] : $names);
-    }
-
-    $output = "<h3>{$formatted_names} baby Registry</h3>"; // Display the formatted registry name
-
-    // Show delete button if the logged-in user is the owner of the registry
     if ($registry->user_id == get_current_user_id()) {
         $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Registry</button>';
     }
 
+    // Build the query to get registry items
     $registry_items_table = $wpdb->prefix . "baby_registry_items";
-    $posts_table = $wpdb->prefix . "posts";
-
-    // Get registry items
-    $items = $wpdb->get_results($wpdb->prepare(
+    $query = $wpdb->prepare(
         "SELECT p.ID, p.post_title, p.post_excerpt, pm.meta_value AS price
          FROM $registry_items_table ri
-         JOIN $posts_table p ON p.ID = ri.product_id
+         JOIN {$wpdb->prefix}posts p ON p.ID = ri.product_id
          LEFT JOIN {$wpdb->prefix}postmeta pm ON pm.post_id = p.ID AND pm.meta_key = '_price'
          WHERE ri.registry_id = %d AND ri.purchased = 0",
         $registry_id
-    ));
+    );
 
-    // Check if items exist
-    if (!empty($items)) {
+    if (!empty($category_filters)) {
+        $placeholders = implode(', ', array_fill(0, count($category_filters), '%s'));
+        $query .= $wpdb->prepare(" AND p.post_category IN ($placeholders)", $category_filters);
+    }
+
+    $items = $wpdb->get_results($query);
+
+    // Display the items
+    if ($items) {
         $output .= "<ul>";
         foreach ($items as $product) {
-            $price = wc_price($product->price); // Format price with WooCommerce settings
-
-            // Get the product image URL
-            $image_id = get_post_thumbnail_id($product->ID);
-            $image_url = wp_get_attachment_url($image_id);
+            $price = wc_price($product->price);
+            $image_url = wp_get_attachment_url(get_post_thumbnail_id($product->ID));
             $image_html = $image_url ? "<img src='{$image_url}' alt='{$product->post_title}' style='width:100px;' />" : 'No image available';
-
-            $output .= "<li>";
-            $output .= "{$image_html} <strong>" . esc_html($product->post_title) . "</strong> - " . esc_html($product->post_excerpt) . "<br>";
-            $output .= "Price: {$price}";
-            $output .= "</li>";
+            $output .= "<li>{$image_html} <strong>" . esc_html($product->post_title) . "</strong> - " . esc_html($product->post_excerpt) . "<br>Price: {$price}</li>";
         }
         $output .= "</ul>";
     } else {
-        $output .= "<p>No products found in this category.</p>";
+        $output .= "<p>No products found in this registry.</p>";
     }
 
     return $output;
 }
-
 add_shortcode('baby_registry', 'display_baby_registry');
+
 
 
 /**
@@ -271,22 +280,51 @@ function registry_image($baby_room) {
 
     $output = '<ul class="user-registries">';
     foreach ($registries as $registry) {
-        $image_url = registry_image($registry->baby_room);  // Get image URL based on baby_room
+        $image_url = registry_image($registry->baby_room);
+        $url = add_query_arg('registry_id', $registry->registry_id, 'https://metazone.store/?page_id=659');
+
         $output .= '<li>';
         $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" style="width:100px;height:auto;">';
         $output .= '<h3>' . esc_html($registry->registry_name) . '</h3>';
         $output .= '<p>Description: ' . esc_html($registry->registry_description) . '</p>';
         $output .= '<p>Due Date: ' . esc_html($registry->due_date) . '</p>';
-        // Baby room info is not displayed
+        $output .= '<a href="' . esc_url($url) . '" class="button">Enter</a>';
         $output .= '</li>';
     }
+
+    if (is_wp_error($registries)) {
+        return '<p>Error: ' . esc_html($registries->get_error_message()) . '</p>';
+    }
+
     $output .= '</ul>';
 
     return $output;
 }
 
+
 add_shortcode('user_registries', 'display_user_registries');
 
+
+/**
+ * Adds a 'Get Registry items handler'
+ */
+// Add actions for AJAX - wp_ajax_nopriv_ allows non-logged in users to access this AJAX call if needed.
+function handle_get_registry_items() {
+    // Get registry_id and category_filters from AJAX request
+    $registry_id = isset($_POST['registry_id']) ? intval($_POST['registry_id']) : 0;
+    $category_filters = isset($_POST['category_filters']) ? $_POST['category_filters'] : [];
+
+    // Call your function
+    $results = get_registry_items($registry_id, $category_filters);
+
+    if (is_wp_error($results)) {
+        wp_send_json_error($results->get_error_message());
+    } else {
+        wp_send_json_success($results);
+    }
+}
+add_action('wp_ajax_get_registry_items', 'handle_get_registry_items');
+add_action('wp_ajax_nopriv_get_registry_items', 'handle_get_registry_items');
 
 /**
  * Adds a 'Add to Registry' button on each WooCommerce product.
@@ -398,19 +436,30 @@ add_action('wp_ajax_add_to_registry_ajax', 'add_to_registry_ajax');
  * Enqueue scripts and styles, include AJAX script.
  */
 function baby_registry_scripts() {
-    // Enqueue the JavaScript file
-    wp_enqueue_script('baby-registry-js', plugin_dir_url(__FILE__) . 'public/js/baby-registry.js', array('jquery'), '1.0', true);
+    // Enqueue jQuery which is already registered with WordPress
+    wp_enqueue_script('jquery');
+
+    // Enqueue custom JavaScript files with jQuery as a dependency
+    // wp_enqueue_script('index-js', plugin_dir_url(__FILE__) . 'Metazone_registry/app-files/index.js', array('jquery'), null, true);
+
+    // Correctly localize scripts after they have been enqueued
+    // wp_localize_script('index-js', 'ajax_object', array(
+    //     'ajax_url' => admin_url('admin-ajax.php'),
+    //     'nonce' => wp_create_nonce('ajax_object_nonce')
+    // ));
     
-    // Localize the script to pass the AJAX URL and a nonce for security
-    wp_localize_script('baby-registry-js', 'babyRegistryParams', [
+    wp_enqueue_script('baby-registry-js', plugin_dir_url(__FILE__) . 'public/js/baby-registry.js', array('jquery'), null, true);
+
+    wp_localize_script('baby-registry-js', 'babyRegistryParams', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('baby_registry_nonce')
-    ]);
+    ));
 
     // Enqueue the CSS file
     wp_enqueue_style('baby-registry-css', plugin_dir_url(__FILE__) . 'public/css/baby-registry.css');
 }
 add_action('wp_enqueue_scripts', 'baby_registry_scripts');
+
 
 
 /**

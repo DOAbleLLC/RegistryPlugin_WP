@@ -1,3 +1,5 @@
+console.log("Script loaded");
+
 jQuery(document).ready(function($) {
     $('.add-to-registry-button').on('click', function() {
         var registryId = $('#registry-select').val();
@@ -27,6 +29,8 @@ jQuery(document).ready(function($) {
         });
     });
 });
+
+
 
 
 jQuery(document).ready(function($) {
@@ -60,4 +64,3 @@ function deleteRegistry(registryId) {
         }
     });
 }
-
