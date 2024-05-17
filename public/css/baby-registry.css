@@ -123,7 +123,7 @@
     height: auto;
 }
 
-.affiliate-link-button, .remove-from-registry-button {
+.affiliate-link-button, .remove-from-registry-button, .delete-registry-button, .copy-address-button {
     display: block;
     margin-top: 10px;
     width: 100%;
@@ -137,11 +137,24 @@
     cursor: pointer;
 }
 
+.copy-address-container {
+    margin-top: 10px;
+    text-align: center;
+}
+
 .affiliate-link-button:hover {
     background-color: #c5fb00;
 }
 
+.copy-address-button:hover {
+    background-color: #c5fb00;
+}
+
 .remove-from-registry-button:hover {
+    background-color: #fb4300;
+}
+
+.delete-registry-button:hover {
     background-color: #fb4300;
 }
 
@@ -192,18 +205,18 @@
     padding: 0;
     margin: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    gap: 40px;
 }
 
-.user-registries li {
+/* .user-registries li {
     border: 1px solid none;
     padding: 10px;
     background-color: #f9f9f9;
 }
 
 .user-registries img {
-    max-width: 100%; /* Ensures the image is responsive */
+    max-width: 100%;
     height: auto;
     display: block;
 }
@@ -231,6 +244,45 @@
 }
 
 .user-registries a.button:hover {
+    background-color: #c5fb00;
+} */
+
+.registry-item {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    background-color: #f9f9f9;
+    transition: background-color 0.3s ease;
+}
+
+.registry-item:hover {
+    background-color: #f0f0f0;
+}
+
+.registry-item-image {
+    width: 100%;
+    height: auto;
+}
+
+.registry-item-title,
+.registry-item-description,
+.registry-item-due-date {
+    padding: 10px;
+    margin: 0;
+}
+
+.registry-item-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    background-color: #deae5b;
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.registry-item-button:hover {
     background-color: #c5fb00;
 }
 
@@ -266,6 +318,8 @@
         font-size: 0.9rem;
     }
 }
+
+
 
 /* General styling for forms */
 /* form {
@@ -372,5 +426,11 @@ form input[type="submit"]:hover {
 
 .registry-item-form input[type="submit"]:hover {
     background-color: #c5fb00;
+}
+
+.registry-select, .baby_room {
+    padding: 0;
+    padding-left: 10px;
+    height: auto;
 }
 /* Additional styles for specific elements or states can be added below */

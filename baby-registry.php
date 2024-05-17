@@ -153,6 +153,17 @@ function get_registry_items($registry_id, $category_filters = []) {
         return '<p>No Registry found.</p>';
     }
 
+    // Get user shipping address from WooCommerce
+    $user_id = $registry->user_id;
+    $shipping_address1 = get_user_meta($user_id, 'shipping_address_1', true);
+    $shipping_address2 = get_user_meta($user_id, 'shipping_address_2', true); // Additional address line
+    $shipping_city = get_user_meta($user_id, 'shipping_city', true);
+    $shipping_state = get_user_meta($user_id, 'shipping_state', true);
+    $shipping_postcode = get_user_meta($user_id, 'shipping_postcode', true);
+    $shipping_country = get_user_meta($user_id, 'shipping_country', true);
+
+    $shipping_address = trim($shipping_address1 . ' ' . $shipping_address2) . ", " . $shipping_city . ", " . $shipping_state . ", " . $shipping_postcode . ", " . $shipping_country;
+
     $names = json_decode($registry->registry_name);
     $formatted_names = is_array($names) ? implode(' and ', array_map('esc_html', $names)) : esc_html($names);
     $output = "<h3 class='registry-title'>{$formatted_names}'s Baby Registry</h3>";
@@ -161,6 +172,9 @@ function get_registry_items($registry_id, $category_filters = []) {
     if ($registry->user_id == get_current_user_id()) {
         $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Entire Registry</button>';
     }
+
+    // Copy address button
+    $output .= '<div class="copy-address-container"><button id="copyAddressButton" class="copy-address-button" data-address="' . esc_attr($shipping_address) . '">Copy Address</button></div>';
 
     // Build the query to get registry items
     $registry_items_table = $wpdb->prefix . "baby_registry_items";
@@ -404,13 +418,13 @@ function registry_image($baby_room) {
             'registry_id' => $registry->registry_id,
             'redirect_url' => urlencode($redirect_url)
         ], 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html');
-        
-        $output .= '<li>';
-        $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" style="width:100px;height:auto;">';
-        $output .= '<h3>' . esc_html($registry->registry_name) . '</h3>';
-        $output .= '<p>Description: ' . esc_html($registry->registry_description) . '</p>';
-        $output .= '<p>Due Date: ' . esc_html($registry->due_date) . '</p>';
-        $output .= '<a href="' . esc_url($url) . '" class="button">Enter</a>';
+
+        $output .= '<li class="registry-item">';
+        $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" class="registry-item-image">';
+        $output .= '<h3 class="registry-item-title">' . esc_html($registry->registry_name) . '</h3>';
+        $output .= '<p class="registry-item-description">Description: ' . esc_html($registry->registry_description) . '</p>';
+        $output .= '<p class="registry-item-due-date">Due Date: ' . esc_html($registry->due_date) . '</p>';
+        $output .= '<a href="' . esc_url($url) . '" class="button registry-item-button">Enter</a>';
         $output .= '</li>';
     }
 

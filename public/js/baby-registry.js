@@ -62,6 +62,24 @@ jQuery(document).ready(function($) {
 
 
 jQuery(document).ready(function($) {
+    // Function to copy text to clipboard
+    function copyToClipboard(text) {
+        var $temp = $('<input>');
+        $('body').append($temp);
+        $temp.val(text).select();
+        document.execCommand('copy');
+        $temp.remove();
+        alert('Address copied to clipboard!');
+    }
+
+    // Attach the click event to the copy address button
+    $('#copyAddressButton').on('click', function() {
+        var address = $(this).data('address');
+        console.log("Copying address:", address);  // Debugging line
+        copyToClipboard(address);
+    });
+
+    // Existing form submission code
     $('.registry-item-form').on('submit', function(e) {
         e.preventDefault();
 
@@ -97,8 +115,6 @@ jQuery(document).ready(function($) {
         });
     });
 });
-
-
 
 
 jQuery(document).ready(function($) {
