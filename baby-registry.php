@@ -196,18 +196,23 @@ function get_registry_items($registry_id, $category_filters = []) {
                             {$image_html}
                             <div class='registry-item-details'>
                               <h4 class='registry-item-title'>" . esc_html($product->post_title) . "</h4>
-                              <p class='registry-item-excerpt'>" . esc_html($product->post_excerpt) . "</p>
                               <p class='registry-item-price'>Price: {$price}</p>
                               <p class='registry-item-needed'>Needs: <span class='quantity-needed-text'>{$quantity_needed}</span></p>
                               <form action='' method='post' class='registry-item-form' data-registry-id='" . esc_attr($registry_id) . "' data-product-id='" . esc_attr($product->ID) . "'>
                                 " . wp_nonce_field('update_registry_item_nonce', '_wpnonce', true, false) . "
-                                <input type='number' name='purchased_amount' min='1' max='{$quantity_needed}' placeholder='Quantity' class='registry-item-input'>
-                                <input type='submit' value='Update Quantity' class='registry-item-button'>
+                                <label for='purchased_amount' class='registry-item-label'>Purchased: </label>
+                                <input type='number' name='purchased_amount' min='1' max='{$quantity_needed}' placeholder='1' class='registry-item-input'>
+                                <input type='submit' value='Update' class='baby-registry-form'>
                               </form>";
 
             if (!empty($external_url)) {
-                $output .= "<a href='" . esc_url($external_url) . "' target='_blank' class='registry-item-external-link'>Buy</a>";
+                $output .= "<a href='" . esc_url($external_url) . "' target='_blank' class='affiliate-link-button'>Buy Now</a>";
             }
+
+            if ($registry->user_id == get_current_user_id()) {
+                $output .= '<button class="remove-from-registry-button" data-product-id="' . esc_attr($product->ID) . '" data-registry-id="' . esc_attr($registry_id) . '">Remove from Registry</button>';
+            }
+
 
             $output .= "</div></div></li>";
         }
@@ -231,7 +236,10 @@ add_shortcode('baby_registry', 'display_baby_registry');
     global $wpdb;
 
     // Check for nonce security
-    check_ajax_referer('update_registry_item_nonce', 'security');
+    if (!check_ajax_referer('baby_registry_nonce', 'security', false)) {
+        wp_send_json_error('Nonce verification failed.');
+        return;
+    }
 
     // Retrieve posted data
     $registry_id = isset($_POST['registry_id']) ? intval($_POST['registry_id']) : 0;
@@ -240,6 +248,7 @@ add_shortcode('baby_registry', 'display_baby_registry');
 
     if ($registry_id <= 0 || $product_id <= 0 || $purchased_amount <= 0) {
         wp_send_json_error('Invalid parameters provided.');
+        return;
     }
 
     // Get current purchased quantity and quantity needed
@@ -250,11 +259,13 @@ add_shortcode('baby_registry', 'display_baby_registry');
 
     if (!$item) {
         wp_send_json_error('Item not found in the registry.');
+        return;
     }
 
     $new_purchased_quantity = $item->purchased_quantity + $purchased_amount;
     if ($new_purchased_quantity > $item->quantity) {
         wp_send_json_error('Purchased quantity exceeds required quantity.');
+        return;
     }
 
     // Update purchased quantity in the database
@@ -268,6 +279,20 @@ add_shortcode('baby_registry', 'display_baby_registry');
 
     if ($updated === false) {
         wp_send_json_error('Failed to update registry item.');
+        return;
+    }
+
+    // Update the items_purchased in the baby_registry_details table
+    $registry_update = $wpdb->query($wpdb->prepare(
+        "UPDATE {$wpdb->prefix}baby_registry_details
+         SET items_purchased = items_purchased + %d
+         WHERE registry_id = %d",
+        $purchased_amount, $registry_id
+    ));
+
+    if ($registry_update === false) {
+        wp_send_json_error('Failed to update registry details.');
+        return;
     }
 
     $quantity_needed = $item->quantity - $new_purchased_quantity;
@@ -276,7 +301,6 @@ add_shortcode('baby_registry', 'display_baby_registry');
 }
 add_action('wp_ajax_update_registry_item', 'update_registry_item_ajax');
 add_action('wp_ajax_nopriv_update_registry_item', 'update_registry_item_ajax'); // If non-logged-in users should be able to perform this action
-
 
 
 

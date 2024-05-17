@@ -81,15 +81,17 @@ jQuery(document).ready(function($) {
                 purchased_amount: purchasedAmount
             },
             success: function(response) {
-                if(response.success) {
+                if (response.success) {
                     var quantityNeeded = response.data.quantity_needed;
-                    $form.siblings('.quantity-needed-text').text(quantityNeeded);
+                    $form.closest('.registry-item-details').find('.quantity-needed-text').text(quantityNeeded);
                     alert('Quantity updated successfully!');
                 } else {
+                    console.log('Error:', response.data);
                     alert('Error: ' + response.data);
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', error);
                 alert('Failed to process the request.');
             }
         });
