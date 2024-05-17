@@ -72,6 +72,22 @@ jQuery(document).ready(function($) {
         alert('Address copied to clipboard!');
     }
 
+    // Function to create the share URL
+    function createShareUrl(redirectUrl, registryId) {
+        var url = new URL(redirectUrl);
+        url.searchParams.set('registry_id', registryId);
+        return url.toString();
+    }
+
+    // Attach the click event to the share button
+    $('.registry-item-share-button').on('click', function() {
+        var redirectUrl = $(this).data('redirect-url');
+        var registryId = $(this).data('registry-id');
+        var shareUrl = createShareUrl(redirectUrl, registryId);
+        console.log("Generated URL:", shareUrl);  // Debugging line
+        copyToClipboard(shareUrl);
+    });
+
     // Attach the click event to the copy address button
     $('#copyAddressButton').on('click', function() {
         var address = $(this).data('address');

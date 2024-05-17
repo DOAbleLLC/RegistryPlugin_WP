@@ -138,9 +138,6 @@ function get_registry_items($registry_id, $category_filters = []) {
     $category_filters_from_atts = explode(',', sanitize_text_field($attributes['category_filters']));
     $category_filters = array_filter(array_unique(array_merge($category_filters_from_atts, $category_filters_from_url)));
 
-    if (!is_user_logged_in()) {
-        return '<p>You must be logged in to view registry details.</p>';
-    }
 
     // Fetch registry details
     $registry_details_table = $wpdb->prefix . "baby_registry_details";
@@ -169,12 +166,12 @@ function get_registry_items($registry_id, $category_filters = []) {
     $output = "<h3 class='registry-title'>{$formatted_names}'s Baby Registry</h3>";
 
     // Delete entire registry button if current user is the owner
-    if ($registry->user_id == get_current_user_id()) {
+    if (is_user_logged_in() && $registry->user_id == get_current_user_id()) {
         $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Entire Registry</button>';
     }
 
     // Copy address button
-    $output .= '<div class="copy-address-container"><button id="copyAddressButton" class="copy-address-button" data-address="' . esc_attr($shipping_address) . '">Copy Address</button></div>';
+    $output .= '<div class="copy-address-container"><button id="copyAddressButton" class="copy-address-button" data-address="' . esc_attr($shipping_address) . '">Copy Shipping Address</button></div>';
 
     // Build the query to get registry items
     $registry_items_table = $wpdb->prefix . "baby_registry_items";
@@ -220,10 +217,10 @@ function get_registry_items($registry_id, $category_filters = []) {
                               </form>";
 
             if (!empty($external_url)) {
-                $output .= "<a href='" . esc_url($external_url) . "' target='_blank' class='affiliate-link-button'>Buy Now</a>";
+                 $output .= "<button class='affiliate-link-button' onclick=\"window.open('" . esc_url($external_url) . "', '_blank')\">Buy Now</button>";
             }
 
-            if ($registry->user_id == get_current_user_id()) {
+            if (is_user_logged_in() && $registry->user_id == get_current_user_id()) {
                 $output .= '<button class="remove-from-registry-button" data-product-id="' . esc_attr($product->ID) . '" data-registry-id="' . esc_attr($registry_id) . '">Remove from Registry</button>';
             }
 
@@ -424,7 +421,10 @@ function registry_image($baby_room) {
         $output .= '<h3 class="registry-item-title">' . esc_html($registry->registry_name) . '</h3>';
         $output .= '<p class="registry-item-description">Description: ' . esc_html($registry->registry_description) . '</p>';
         $output .= '<p class="registry-item-due-date">Due Date: ' . esc_html($registry->due_date) . '</p>';
-        $output .= '<a href="' . esc_url($url) . '" class="button registry-item-button">Enter</a>';
+        $output .= '<div class="button-container">';
+        $output .= '<button class="button registry-item-button styled-button" onclick="window.location.href=\'' . esc_url($url) . '\'">Enter Registry</button>';
+        $output .= '<button class="button registry-item-share-button styled-button" data-redirect-url="' . esc_url($redirect_url) . '" data-registry-id="' . esc_attr($registry->registry_id) . '">Share Registry</button>';
+        $output .= '</div>';
         $output .= '</li>';
     }
 
@@ -460,26 +460,25 @@ function add_registry_button_on_product() {
     
     // Dropdown for selecting registry
     if (!empty($registries)) {
-        echo '<select id="registry-select" name="registry_id" class="registry-select">';
+        echo '<select id="registry-select" name="registry_id" class="registry-select styled-select">';
         foreach ($registries as $registry) {
             echo '<option value="' . esc_attr($registry->registry_id) . '">' . esc_html($registry->registry_name) . '</option>';
         }
         echo '</select>';
     } else {
-        echo '<p>No registries available. Please create one first.</p>';
+        echo '<p class="no-registries">No registries available. Please create one first.</p>';
     }
 
     // Quantity input
-    echo '<input type="number" id="quantity-input" name="quantity" class="registry-quantity-input" value="1" min="1" style="margin-right: 5px;">';
+    echo '<input type="number" id="quantity-input" name="quantity" class="registry-quantity-input styled-quantity-input" value="1" min="1">';
     
     // Add to registry button
-    echo '<button type="button" class="add-to-registry-button" data-product-id="' . esc_attr($product->get_id()) . '">Add to Registry</button>';
+    echo '<button type="button" class="add-to-registry-button styled-add-button" data-product-id="' . esc_attr($product->get_id()) . '">Add to Registry</button>';
     
     // End form
     echo '</form>';
 }
 add_action('woocommerce_after_shop_loop_item', 'add_registry_button_on_product', 20);
-
 
 
 /**
@@ -808,13 +807,13 @@ function create_baby_registry($user_id, $names, $description = '', $due_date = '
 
     // Dropdown for baby_room
     $output .= '<label for="baby_room">Baby Room Number:</label>';
-    $output .= '<select id="baby_room" name="baby_room">';
+    $output .= '<select id="baby_room" name="baby_room" class="styled-select">';
     $output .= '<option value="0">Room 1 - Modern Theme</option>';
     $output .= '<option value="1">Room 2 - Traditional Theme</option>';
     $output .= '<option value="2">Room 3 - Design a custom room</option>';
     $output .= '</select>';
 
-    $output .= '<input type="submit" name="submit_registry" value="Create Registry">';
+    $output .= '<input type="submit" name="submit_registry" value="Create Registry" class="styled-submit styled-add-button">';
     $output .= '</form>';
 
     return $output;
