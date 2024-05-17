@@ -1,10 +1,11 @@
 <?php
 /*
 Plugin Name: WooCommerce Baby Registry
-Plugin URI: http://metazone.store/
+Plugin URI: https://github.com/DOAbleLLC/RegistryPlugin_WP
 Description: Enables a baby registry feature for WooCommerce stores.
-Version: 1.1
+Version: 1.2
 Author: Psyscho bit
+This plugin was styled using the Astra WP theme 
 */
 
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
