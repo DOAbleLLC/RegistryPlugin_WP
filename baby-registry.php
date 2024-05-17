@@ -27,7 +27,7 @@ function baby_registry_activate() {
         baby_room INT,
         items_count INT DEFAULT 0,
         items_purchased INT DEFAULT 0,
-        registry_url VARCHAR(255),  // Added new column for the registry URL
+        registry_url VARCHAR(255),
         PRIMARY KEY  (registry_id),
         FOREIGN KEY (user_id) REFERENCES {$wpdb->prefix}users(ID) ON DELETE CASCADE
     ) $charset_collate;";
@@ -155,7 +155,7 @@ function get_registry_items($registry_id, $category_filters = []) {
 
     $names = json_decode($registry->registry_name);
     $formatted_names = is_array($names) ? implode(' and ', array_map('esc_html', $names)) : esc_html($names);
-    $output = "<h3>{$formatted_names} Baby Registry</h3>";
+    $output = "<h3 class='registry-title'>{$formatted_names}'s Baby Registry</h3>";
 
     // Delete entire registry button if current user is the owner
     if ($registry->user_id == get_current_user_id()) {
@@ -169,14 +169,14 @@ function get_registry_items($registry_id, $category_filters = []) {
          FROM $registry_items_table ri
          JOIN {$wpdb->prefix}posts p ON p.ID = ri.product_id
          LEFT JOIN {$wpdb->prefix}postmeta pm ON pm.post_id = p.ID AND pm.meta_key = '_price'
-         LEFT JOIN {$wpdb->prefix}postmeta pm2 ON pm2.post_id = p.ID AND pm.meta_key = '_product_url'
-         WHERE ri.registry_id = %d AND ri.purchased = 0",
+         LEFT JOIN {$wpdb->prefix}postmeta pm2 ON pm2.post_id = p.ID AND pm2.meta_key = '_product_url'
+         WHERE ri.registry_id = %d",
         $registry_id
     );
 
     if (!empty($category_filters)) {
         $placeholders = implode(', ', array_fill(0, count($category_filters), '%s'));
-        $query .= $wpdb->prepare(" AND p.post_category IN ($placeholders)", $category_filters);
+        $query .= $wpdb->prepare(" AND p.ID IN (SELECT object_id FROM {$wpdb->prefix}term_relationships tr JOIN {$wpdb->prefix}term_taxonomy tt ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tt.term_id IN ($placeholders))", $category_filters);
     }
 
     $items = $wpdb->get_results($query);
@@ -187,22 +187,29 @@ function get_registry_items($registry_id, $category_filters = []) {
         foreach ($items as $product) {
             $price = wc_price($product->price);
             $image_url = wp_get_attachment_url(get_post_thumbnail_id($product->ID));
-            $image_html = $image_url ? "<img src='{$image_url}' alt='{$product->post_title}' style='width:100px;' />";
+            $image_html = $image_url ? "<img src='{$image_url}' alt='" . esc_attr($product->post_title) . "' class='registry-item-image' />" : '';
             $quantity_needed = max(0, $product->quantity - $product->purchased_quantity);
-            $output .= "<li class='grid-item'><div>{$image_html}</div><div><strong>" . esc_html($product->post_title) . "</strong> - " . esc_html($product->post_excerpt) . "<br>Price: {$price}<br>Needed: {$quantity_needed}";
+            $external_url = get_post_meta($product->ID, '_product_url', true); // Get external URL
 
-            // Add an update purchase quantity button if logged in
-            $output .= '<form action="" method="post" data-registry-id="' . esc_attr($registry_id) . '" data-product-id="' . esc_attr($product->ID) . '">';
-            $output .= wp_nonce_field('update_registry_item_nonce', '_wpnonce', true, false);  // Nonce field for security
-            $output .= '<input type="number" name="purchased_amount" min="1" max="' . $quantity_needed . '" placeholder="Quantity"><input type="submit" value="Update Quantity" class="update-quantity-button">';
-            $output .= '</form>';
+            $output .= "<li class='registry-item'>
+                          <div class='registry-item-content'>
+                            {$image_html}
+                            <div class='registry-item-details'>
+                              <h4 class='registry-item-title'>" . esc_html($product->post_title) . "</h4>
+                              <p class='registry-item-excerpt'>" . esc_html($product->post_excerpt) . "</p>
+                              <p class='registry-item-price'>Price: {$price}</p>
+                              <p class='registry-item-needed'>Needs: <span class='quantity-needed-text'>{$quantity_needed}</span></p>
+                              <form action='' method='post' class='registry-item-form' data-registry-id='" . esc_attr($registry_id) . "' data-product-id='" . esc_attr($product->ID) . "'>
+                                " . wp_nonce_field('update_registry_item_nonce', '_wpnonce', true, false) . "
+                                <input type='number' name='purchased_amount' min='1' max='{$quantity_needed}' placeholder='Quantity' class='registry-item-input'>
+                                <input type='submit' value='Update Quantity' class='registry-item-button'>
+                              </form>";
 
-            // Add an external/affiliate URL button if it exists
-            if (!empty($product->external_url)) {
-                $output .= '<a href="' . esc_url($product->external_url) . '" target="_blank" class="affiliate-link-button">Buy</a>';
+            if (!empty($external_url)) {
+                $output .= "<a href='" . esc_url($external_url) . "' target='_blank' class='registry-item-external-link'>Buy</a>";
             }
 
-            $output .= "</div></li>";
+            $output .= "</div></div></li>";
         }
         $output .= "</ul>";
     } else {
@@ -214,65 +221,62 @@ function get_registry_items($registry_id, $category_filters = []) {
 add_shortcode('baby_registry', 'display_baby_registry');
 
 
+
+
 /**
  * update registry items
  */
 
-function update_registry_item_ajax() {
-    global $wpdb; // Access the global database object
+ function update_registry_item_ajax() {
+    global $wpdb;
 
     // Check for nonce security
-    if (!check_ajax_referer('update_registry_item_nonce', 'security', false)) {
-        wp_send_json_error('Nonce verification failed.');
-        return;
-    }
+    check_ajax_referer('update_registry_item_nonce', 'security');
 
+    // Retrieve posted data
     $registry_id = isset($_POST['registry_id']) ? intval($_POST['registry_id']) : 0;
     $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
     $purchased_amount = isset($_POST['purchased_amount']) ? intval($_POST['purchased_amount']) : 0;
 
     if ($registry_id <= 0 || $product_id <= 0 || $purchased_amount <= 0) {
         wp_send_json_error('Invalid parameters provided.');
-        return;
     }
 
-    // Begin a database transaction
-    $wpdb->query('START TRANSACTION');
-
-    // Get current purchased quantity
+    // Get current purchased quantity and quantity needed
     $item = $wpdb->get_row($wpdb->prepare(
         "SELECT quantity, purchased_quantity FROM {$wpdb->prefix}baby_registry_items WHERE registry_id = %d AND product_id = %d",
         $registry_id, $product_id
     ));
 
     if (!$item) {
-        $wpdb->query('ROLLBACK');
         wp_send_json_error('Item not found in the registry.');
-        return;
     }
 
     $new_purchased_quantity = $item->purchased_quantity + $purchased_amount;
-    $is_purchased = ($new_purchased_quantity >= $item->quantity) ? 1 : 0;
-
-    // Update purchased quantity and potentially mark as purchased
-    $update_result = $wpdb->update(
-        "{$wpdb->prefix}baby_registry_items",
-        ['purchased_quantity' => $new_purchased_quantity, 'purchased' => $is_purchased],
-        ['registry_id' => $registry_id, 'product_id' => $product_id],
-        ['%d', '%d'], // value formats
-        ['%d', '%d'] // where formats
-    );
-
-    if ($update_result === false) {
-        $wpdb->query('ROLLBACK');
-        wp_send_json_error('Failed to update registry item.');
-        return;
+    if ($new_purchased_quantity > $item->quantity) {
+        wp_send_json_error('Purchased quantity exceeds required quantity.');
     }
 
-    $wpdb->query('COMMIT');
-    wp_send_json_success('Registry item updated successfully.');
+    // Update purchased quantity in the database
+    $updated = $wpdb->update(
+        "{$wpdb->prefix}baby_registry_items",
+        ['purchased_quantity' => $new_purchased_quantity],
+        ['registry_id' => $registry_id, 'product_id' => $product_id],
+        ['%d'],
+        ['%d', '%d']
+    );
+
+    if ($updated === false) {
+        wp_send_json_error('Failed to update registry item.');
+    }
+
+    $quantity_needed = $item->quantity - $new_purchased_quantity;
+
+    wp_send_json_success(['quantity_needed' => $quantity_needed]);
 }
 add_action('wp_ajax_update_registry_item', 'update_registry_item_ajax');
+add_action('wp_ajax_nopriv_update_registry_item', 'update_registry_item_ajax'); // If non-logged-in users should be able to perform this action
+
 
 
 
@@ -362,19 +366,20 @@ function registry_image($baby_room) {
         foreach ($registries as $registry) {
         $image_url = registry_image($registry->baby_room); // Ensure this function returns the correct image URL
 
-        // First check if registry_url is not empty and use it if available
+        // Check if registry_url is not empty and use it if available
         if (!empty($registry->registry_url)) {
-            $url = $registry->registry_url;  // Directly use the registry_url if it's provided
+            // Directly use the registry_url as redirect_url
+            $redirect_url = $registry->registry_url;
         } else {
             // Define URL options based on baby_room
-            $redirect_url = $registry->baby_room == 2 ? 'https://customdesigns.example.com' : 'https://metazone.store/?page_id=636';
-            
-            // Construct the final URL by adding query arguments for registry_id and redirect_url
-            $url = add_query_arg([
-                'registry_id' => $registry->registry_id, 
-                'redirect_url' => urlencode($redirect_url)
-            ], 'https://metazone.store/?page_id=659');
+            $redirect_url = $registry->baby_room == 2 ? 'https://metazone.store/?page_id=636' : 'https://metazone.store/?page_id=636';
         }
+
+        // Construct the final URL by adding query arguments for registry_id and redirect_url
+        $url = add_query_arg([
+            'registry_id' => $registry->registry_id,
+            'redirect_url' => urlencode($redirect_url)
+        ], 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html');
         
         $output .= '<li>';
         $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" style="width:100px;height:auto;">';
@@ -401,23 +406,7 @@ add_shortcode('user_registries', 'display_user_registries');
 /**
  * Adds a 'Get Registry items handler'
  */
-// Add actions for AJAX - wp_ajax_nopriv_ allows non-logged in users to access this AJAX call if needed.
-function handle_get_registry_items() {
-    // Get registry_id and category_filters from AJAX request
-    $registry_id = isset($_POST['registry_id']) ? intval($_POST['registry_id']) : 0;
-    $category_filters = isset($_POST['category_filters']) ? $_POST['category_filters'] : [];
 
-    // Call your function
-    $results = get_registry_items($registry_id, $category_filters);
-
-    if (is_wp_error($results)) {
-        wp_send_json_error($results->get_error_message());
-    } else {
-        wp_send_json_success($results);
-    }
-}
-add_action('wp_ajax_get_registry_items', 'handle_get_registry_items');
-add_action('wp_ajax_nopriv_get_registry_items', 'handle_get_registry_items');
 
 /**
  * Adds a 'Add to Registry' button on each WooCommerce product.
@@ -643,15 +632,6 @@ add_action('wp_ajax_remove_from_registry_ajax', 'remove_from_registry_ajax');
 function baby_registry_scripts() {
     // Enqueue jQuery which is already registered with WordPress
     wp_enqueue_script('jquery');
-
-    // Enqueue custom JavaScript files with jQuery as a dependency
-    // wp_enqueue_script('index-js', plugin_dir_url(__FILE__) . 'Metazone_registry/app-files/index.js', array('jquery'), null, true);
-
-    // Correctly localize scripts after they have been enqueued
-    // wp_localize_script('index-js', 'ajax_object', array(
-    //     'ajax_url' => admin_url('admin-ajax.php'),
-    //     'nonce' => wp_create_nonce('ajax_object_nonce')
-    // ));
     
     wp_enqueue_script('baby-registry-js', plugin_dir_url(__FILE__) . 'public/js/baby-registry.js', array('jquery'), null, true);
 

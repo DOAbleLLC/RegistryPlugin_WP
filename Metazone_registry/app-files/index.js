@@ -332,36 +332,55 @@
     var text = document.createElement('div');
     text.classList.add('info-hotspot-text');
 
+    console.log("Current URL:", window.location.href);
+
     // Function to get parameters from URL
     function getParameterByName(name, url = window.location.href) {
         name = name.replace(/[\[\]]/g, '\\$&');
         var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
             results = regex.exec(url);
-        if (!results) return null;
-        if (!results[2]) return '';
+        if (!results) {
+            console.log('Parameter not found:', name);
+            return null;
+        }
+        if (!results[2]) {
+            console.log('Parameter has no value:', name);
+            return '';
+        }
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
+
 
     // Extract registry_id and redirect_url from URL
     var registryId = getParameterByName('registry_id');
     var redirectUrl = getParameterByName('redirect_url'); // This should be a complete URL
 
-    // Ensure the redirect URL is decoded properly if it was URL-encoded
-    redirectUrl = redirectUrl ? decodeURIComponent(redirectUrl) : 'https://defaulturl.com';
+    console.log('Extracted registryId:', registryId);
+    console.log('Extracted redirectUrl before decoding:', redirectUrl);
+
+    // Decode redirectUrl if necessary
+    redirectUrl = redirectUrl ? decodeURIComponent(redirectUrl) : 'https://metazone.store';
+
+    console.log('Redirect URL after decoding or default:', redirectUrl);
 
     // Encode the hotspot text to safely include it as a URL parameter
     var categoryFilters = encodeURIComponent(hotspot.text);
+    console.log('Encoded category filters:', categoryFilters);
 
     // Construct the URL with query parameters
-    var urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('registry_id', registryId); // Update or add registry_id
-    urlParams.set('category_filters', categoryFilters); // Add or update category filters
+    var url = new URL(redirectUrl);
+    var urlParams = new URLSearchParams(url.search);
+    urlParams.set('registry_id', registryId);
+    urlParams.set('category_filters', categoryFilters);
 
-    // Append updated query parameters to the redirect URL
-    var url = redirectUrl + (redirectUrl.includes('?') ? '&' : '?') + urlParams.toString();
+    url.search = urlParams.toString();
 
-    // Set innerHTML to include an anchor tag without target="_blank"
-    text.innerHTML = '<a href="' + url + '">' + hotspot.title + '</a>';
+    console.log('Final URL constructed:', url.href);
+
+    // Set innerHTML to include an anchor tag
+    text.innerHTML = '<a href="' + url.href + '">' + hotspot.text + '</a>';
+
+    
 
 
     // Place header and text into wrapper element.

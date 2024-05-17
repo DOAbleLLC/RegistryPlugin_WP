@@ -36,13 +36,13 @@ jQuery(document).ready(function($) {
         var registryId = $(this).data('registry-id'); // Added to capture the registry ID
 
         $.ajax({
-            url: ajaxurl, // Ensure ajaxurl is defined
+            url: babyRegistryParams.ajaxurl, // Ensure ajaxurl is defined
             type: 'POST',
             data: {
                 action: 'remove_from_registry_ajax',
                 product_id: productId,
                 registry_id: registryId,
-                _ajax_nonce: $('#_ajax_nonce').val() // Use an actual nonce field as needed for security
+                _ajax_nonce: babyRegistryParams.nonce // Use an actual nonce field as needed for security
             },
             success: function(response) {
                 if (response.success) {
@@ -60,28 +60,42 @@ jQuery(document).ready(function($) {
     });
 });
 
-jQuery(document).ready(function($) {
-    $('.registry-item-grid').on('submit', 'form', function(e) {
-        e.preventDefault();
-        var $form = $(this);
-        var formData = {
-            'action': 'update_registry_item',
-            'security': $form.find('#_wpnonce').val(),  // Assuming a nonce field is included in the form
-            'registry_id': $form.data('registry-id'),
-            'product_id': $form.data('product-id'),
-            'purchased_amount': $form.find('input[name="purchased_amount"]').val()
-        };
 
-        $.post(ajaxurl, formData, function(response) {
-            if (response.success) {
-                alert('Quantity updated successfully!');
-                // Update the UI to reflect the new quantity
-            } else {
-                alert('Error: ' + response.data);
+jQuery(document).ready(function($) {
+    $('.registry-item-form').on('submit', function(e) {
+        e.preventDefault();
+
+        var $form = $(this);
+        var registryId = $form.data('registry-id');
+        var productId = $form.data('product-id');
+        var purchasedAmount = $form.find('input[name="purchased_amount"]').val();
+
+        $.ajax({
+            url: babyRegistryParams.ajaxurl,
+            method: 'POST',
+            data: {
+                action: 'update_registry_item',
+                security: babyRegistryParams.nonce,
+                registry_id: registryId,
+                product_id: productId,
+                purchased_amount: purchasedAmount
+            },
+            success: function(response) {
+                if(response.success) {
+                    var quantityNeeded = response.data.quantity_needed;
+                    $form.siblings('.quantity-needed-text').text(quantityNeeded);
+                    alert('Quantity updated successfully!');
+                } else {
+                    alert('Error: ' + response.data);
+                }
+            },
+            error: function() {
+                alert('Failed to process the request.');
             }
         });
     });
 });
+
 
 
 

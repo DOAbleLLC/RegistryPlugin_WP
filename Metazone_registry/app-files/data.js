@@ -34,25 +34,25 @@ var APP_DATA = {
           "yaw": -0.03289615893963571,
           "pitch": 0.026867353444947284,
           "title": "Sleeping",
-          "text": "www.google.com"
+          "text": "bed"
         },
         {
           "yaw": 1.5526489778016277,
           "pitch": 0.03830962169486796,
           "title": "Clothing",
-          "text": "Shop clothing&nbsp;"
+          "text": "clothing;"
         },
         {
           "yaw": 3.0790737986348704,
           "pitch": -0.06225352131583506,
           "title": "Learn and Play",
-          "text": "Shop toys"
+          "text": "toys"
         },
         {
           "yaw": -1.8547965516220906,
           "pitch": -0.3524231066001917,
-          "title": "Info",
-          "text": "registry stats"
+          "title": "Travel",
+          "text": "Travel"
         }
       ]
     }

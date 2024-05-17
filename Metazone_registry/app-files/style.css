@@ -838,3 +838,133 @@ body.view-control-buttons .viewControlButton {
 .viewControlButton-6 {
   margin-left: 105px;
 }
+
+/* Style for the registry title */
+.registry-title {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Style for the delete button */
+.delete-registry-button {
+  background-color: #deae5b;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 20px;
+  display: block;
+  margin: 0 auto;
+}
+
+.delete-registry-button:hover {
+  background-color: #c9302c;
+}
+
+/* Style for the registry items grid */
+.registry-item-grid {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Style for each registry item */
+.registry-item {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Style for the content of each registry item */
+.registry-item-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Style for the image */
+.registry-item-image {
+  width: 100%;
+  height: auto;
+}
+
+/* Style for the details */
+.registry-item-details {
+  padding: 15px;
+  text-align: left;
+}
+
+/* Style for the title */
+.registry-item-title {
+  font-size: 1.25em;
+  margin: 0 0 10px;
+}
+
+/* Style for the excerpt */
+.registry-item-excerpt {
+  font-size: 1em;
+  color: #666;
+  margin: 0 0 10px;
+}
+
+/* Style for the price */
+.registry-item-price {
+  font-size: 1.25em;
+  color: #333;
+  margin: 0 0 10px;
+}
+
+/* Style for the needed quantity */
+.registry-item-needed {
+  font-size: 1em;
+  color: #a86c6c;
+  margin: 0 0 20px;
+}
+
+/* Style for the form */
+.registry-item-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Style for the input */
+.registry-item-input {
+  flex: 1;
+  padding: 8px;
+  font-size: 1em;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+/* Style for the button */
+.registry-item-button {
+  padding: 8px 16px;
+  font-size: 1em;
+  border: none;
+  background-color: #b79b52;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.registry-item-button:hover {
+  background-color: #4cae4c;
+}
+
+/* Style for the external link */
+.registry-item-external-link {
+  display: block;
+  margin-top: 10px;
+  color: #deae5b;
+  text-decoration: none;
+}
+
+.registry-item-external-link:hover {
+  color: #75de5b;
+}
