@@ -47,7 +47,7 @@
 }
 
 .deleteRegistryButton:hover {
-    background-color: #fb4300;
+    background-color: #942626;
 }
 
 .add-to-registry-button {
@@ -125,7 +125,7 @@
 
 .affiliate-link-button, .remove-from-registry-button, .delete-registry-button, .copy-address-button, .registry-item-share-button {
     display: block;
-    margin-top: 10px;
+    /* margin-top: 0px; */
     width: 100%;
     /* padding: 20px; Larger tap targets for mobile */
     font-size: 16px; /* Improved readability on small screens */
@@ -155,11 +155,11 @@
 }
 
 .remove-from-registry-button:hover {
-    background-color: #fb4300;
+    background-color: #942626;
 }
 
 .delete-registry-button:hover {
-    background-color: #fb4300;
+    background-color: #942626;
 }
 
 /* Responsive adjustments */

@@ -169,7 +169,7 @@ function get_registry_items($registry_id, $category_filters = []) {
 
     // Delete entire registry button if current user is the owner
     if (is_user_logged_in() && $registry->user_id == get_current_user_id()) {
-        $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Entire Registry</button>';
+        $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Registry</button>';
     }
 
     // Copy address button
@@ -428,6 +428,7 @@ function registry_image($baby_room) {
         $output .= '<div class="button-container">';
         $output .= '<button class="button registry-item-button styled-button" onclick="window.location.href=\'' . esc_url($url) . '\'">Enter Registry</button>';
         $output .= '<button class="button registry-item-share-button styled-button" data-redirect-url="' . esc_url($redirect_url) . '" data-registry-id="' . esc_attr($registry->registry_id) . '">Share Registry</button>';
+        $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry->registry_id) . '">Delete Registry</button>';
         $output .= '</div>';
         $output .= '</li>';
     }
