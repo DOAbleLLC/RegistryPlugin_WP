@@ -29,6 +29,7 @@ function baby_registry_activate() {
         items_count INT DEFAULT 0,
         items_purchased INT DEFAULT 0,
         registry_url VARCHAR(255),
+        thumbnail_url VARCHAR(255),
         PRIMARY KEY  (registry_id),
         FOREIGN KEY (user_id) REFERENCES {$wpdb->prefix}users(ID) ON DELETE CASCADE
     ) $charset_collate;";
@@ -358,7 +359,7 @@ function get_user_registries() {
             }
 
             // Append "Baby Registry" to the end of the formatted name
-            $registry->registry_name = esc_html($formatted_names) . ' Baby Registry';
+            $registry->registry_name = esc_html($formatted_names) . "'s Baby Registry";
         }
     }
 
@@ -400,7 +401,9 @@ function registry_image($baby_room) {
 
     $output = '<ul class="user-registries">';
         foreach ($registries as $registry) {
-        $image_url = registry_image($registry->baby_room); // Ensure this function returns the correct image URL
+        // Use thumbnail_url if it's not empty, otherwise use registry_image function
+        $image_url = !empty($registry->thumbnail_url) ? $registry->thumbnail_url : registry_image($registry->baby_room);
+
 
         // Check if registry_url is not empty and use it if available
         if (!empty($registry->registry_url)) {
@@ -748,7 +751,7 @@ function create_baby_registry($user_id, $names, $description = '', $due_date = '
     }
 
     // Return the ID of the newly created registry
-    return $wpdb->insert_id;
+    return 'Navigate to the registry page to view your registies';
 }
 
 
@@ -889,7 +892,7 @@ add_action('wp_ajax_add_to_registry_ajax', 'wp_ajax_add_to_registry_handler');
  */
 
  function wp_ajax_delete_baby_registry_handler() {
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'delete_baby_registry_nonce')) {
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'baby_registry_nonce')) {
         wp_send_json_error(['message' => __('Nonce verification failed, unable to delete registry.')]);
         return;
     }

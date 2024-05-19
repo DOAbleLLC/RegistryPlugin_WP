@@ -34,7 +34,7 @@
 .deleteRegistryButton {
     display: inline-block;
     background-color: #dca54a;
-    color: white;
+    color: rgb(0, 0, 0);
     padding: 8px 12px;
     text-align: center;
     text-decoration: none;
@@ -79,7 +79,7 @@
 
 .baby-registry-button {
     background-color: #dca54a; /* Green background for buttons */
-    color: white;
+    color: rgb(0, 0, 0);
     border: none;
     padding: 10px 20px;
     text-align: center;
@@ -109,7 +109,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
-    padding: 20px;
+    padding: 0px !important;
 }
 
 .grid-item {
@@ -127,7 +127,7 @@
     display: block;
     margin-top: 10px;
     width: 100%;
-    padding: 20px; /* Larger tap targets for mobile */
+    /* padding: 20px; Larger tap targets for mobile */
     font-size: 16px; /* Improved readability on small screens */
     background-color: #dca54a; 
     color: rgb(0, 0, 0);
@@ -210,7 +210,8 @@
     margin: 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-    gap: 40px;
+    gap: 80px;
+    padding: 0px !important;
 }
 
 
@@ -271,7 +272,7 @@
     }
 
     .user-registries li {
-        padding: 5px;
+        padding: 0px;
     }
 
     .user-registries h3 {
@@ -293,14 +294,14 @@
 @media (max-width: 768px) {
     form {
         width: 100%;
-        padding: 10px;
+        padding: 0px;
     }
 }
 
 .update-quantity-button {
     background-color: #dca54a;
     border: none;
-    color: white;
+    color: rgb(0, 0, 0);
     padding: 8px 16px;
     text-align: center;
     text-decoration: none;
@@ -312,7 +313,8 @@
 
 
 .registry-item-label {
-    margin: 0;
+    margin-top: 10px;
+    margin-right: 10px;
     font-size: 1em;
 }
 
@@ -440,6 +442,7 @@
 
 .styled-add-button:hover {
     background-color: #AAD338;
+    color: #000000;
 }
 
 .button-container {
@@ -452,7 +455,7 @@
 .styled-button {
     padding: 10px 20px;
     background-color: #dca54a;
-    color: rgb(0, 0, 0);
+    color: rgb(0, 0, 0) !important;
     border: none;
     border-radius: 5px;
     font-size: 16px;
