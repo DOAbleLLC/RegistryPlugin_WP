@@ -746,7 +746,6 @@ body.single-scene #sceneList, body.single-scene #sceneListToggle {
   width: 50px;
   height: 50px;
   background-color: #dca54a;
-  background-color: #dca54a;
   cursor: pointer;
 }
 
@@ -861,6 +860,10 @@ body.view-control-buttons .viewControlButton {
 
 .delete-registry-button:hover {
   background-color: #c9302c;
+}
+
+.info-hotspot-close-wrapper:hover {
+  background-color: #AAD338;
 }
 
 /* Style for the registry items grid */

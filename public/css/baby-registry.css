@@ -47,7 +47,7 @@
 }
 
 .deleteRegistryButton:hover {
-    background-color: #942626;
+    background-color: #ff9131;
 }
 
 .add-to-registry-button {
@@ -102,6 +102,10 @@
         padding: 8px 15px;
         font-size: 14px; /* Smaller buttons on mobile devices */
     }
+
+    .registry-item-grid {
+        padding: 0px !important;
+    }
 }
 
 /* Base styles for the grid, consistent with previous definitions */
@@ -109,7 +113,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
-    padding: 0px !important;
+    /* padding: 0px !important; */
 }
 
 .grid-item {
@@ -123,7 +127,7 @@
     height: auto;
 }
 
-.affiliate-link-button, .remove-from-registry-button, .delete-registry-button, .copy-address-button, .registry-item-share-button {
+.affiliate-link-button, .remove-from-registry-button, .delete-registry-button, .view-room-button, .copy-address-button, .registry-item-share-button {
     display: block;
     /* margin-top: 0px; */
     width: 100%;
@@ -143,7 +147,7 @@
 }
 
 .affiliate-link-button:hover {
-    background-color: #AAD338;
+    background-color: #AAD338 !important;
 }
 
 .registry-item-share-button:hover {
@@ -154,12 +158,24 @@
     background-color: #AAD338;
 }
 
+.view-room-button, .remove-from-registry-button {
+    margin-top: 10px !important;
+}
+
+.view-room-button:hover {
+    background-color: #AAD338;
+}
+
+.product_type_external:hover {
+    background-color: #AAD338 !important;
+}
+
 .remove-from-registry-button:hover {
-    background-color: #942626;
+    background-color: #ff9131;
 }
 
 .delete-registry-button:hover {
-    background-color: #942626;
+    background-color: #ff9131;
 }
 
 /* Responsive adjustments */
@@ -176,15 +192,16 @@
     .registry-item-grid {
         grid-template-columns: 1fr; /* Full width grid items on phones */
         gap: 10px; /* Smaller gap on phones */
+        padding: 0px !important;
     }
 
     .grid-item {
-        padding: 8px; /* Less padding to save space */
+        /* padding: 8px; Less padding to save space */
     }
 
     .affiliate-link-button, .remove-from-registry-button {
         font-size: 14px; /* Smaller text on very small screens */
-        padding: 8px;
+        
     }
 
     h3 {
@@ -294,7 +311,7 @@
 @media (max-width: 768px) {
     form {
         width: 100%;
-        padding: 0px;
+        padding: 10px;
     }
 }
 
@@ -335,9 +352,10 @@
 .registry-item-form {
     display: flex;
     flex-direction: row;
-    max-width: 700px;
+    max-width: 500px;
     margin: 0;
     padding: 20px;
+    
 }
 
 .registry-item-form input[type="submit"] {
@@ -388,7 +406,7 @@
 }
 
 .styled-submit:hover {
-    background-color: #AAD338;
+    background-color: #AAD338 !important;
 }
 
 .registry-form {

@@ -363,22 +363,44 @@
 
     console.log('Redirect URL after decoding or default:', redirectUrl);
 
-    // Encode the hotspot text to safely include it as a URL parameter
-    var categoryFilters = encodeURIComponent(hotspot.text);
-    console.log('Encoded category filters:', categoryFilters);
+        // Check if hotspot.text is an array and join it, otherwise handle as string
+    var hotspotTextArray = Array.isArray(hotspot.text) ? hotspot.text : [hotspot.text];
+    console.log('hotspotTextArray:', hotspotTextArray);
 
-    // Construct the URL with query parameters
-    var url = new URL(redirectUrl);
-    var urlParams = new URLSearchParams(url.search);
-    urlParams.set('registry_id', registryId);
-    urlParams.set('category_filters', categoryFilters);
+    // Initialize an unordered list with inline CSS for bullet styling
+    var listHtml = '<ul style="list-style-type: disc; padding-left: 20px;">';
 
-    url.search = urlParams.toString();
+    // Loop through each element in the array and create a list item with a link
+    hotspotTextArray.forEach(function(category) {
+        var encodedCategory = encodeURIComponent(category);
+        var url = new URL(redirectUrl);
+        var urlParams = new URLSearchParams(url.search);
+        urlParams.set('registry_id', registryId);
+        urlParams.set('category_filters', encodedCategory);
+        url.search = urlParams.toString();
+        var categoryUrl = url.href;
 
-    console.log('Final URL constructed:', url.href);
+        console.log('Final URL constructed for category:', category, categoryUrl);
 
-    // Set innerHTML to include an anchor tag
-    text.innerHTML = '<a href="' + url.href + '">' + hotspot.text + '</a>';
+        listHtml += '<li><a href="' + categoryUrl + '">' + category + '</a></li>';
+    });
+
+    // Close the unordered list
+    listHtml += '</ul>';
+
+    // Add hover styling using a <style> tag
+    var styleHtml = `
+    <style>
+        .info-hotspot-text ul li a:hover {
+            color: #AAD338;
+            // text-decoration: underline;
+        }
+    </style>
+    `;
+
+    // Set innerHTML to the constructed list with hover styling
+    text.innerHTML = styleHtml + listHtml;
+
 
     
 

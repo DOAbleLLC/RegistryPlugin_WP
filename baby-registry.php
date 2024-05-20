@@ -172,6 +172,26 @@ function get_registry_items($registry_id, $category_filters = []) {
         $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Registry</button>';
     }
 
+    // Determine the redirect URL
+    if (!empty($registry->registry_url)) {
+        $redirect_url = $registry->registry_url;
+    } else {
+        $redirect_url = $registry->baby_room == 2 ? 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html' : 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html';
+    }
+
+    // Get the current page URL without query args
+    $current_url = get_permalink();
+
+    // Add query arguments for registry_id and current URL
+    $url = add_query_arg([
+        'registry_id' => $registry_id,
+        'redirect_url' => urlencode($current_url)
+    ], $redirect_url);
+
+    // Add View Room button
+    $output .= '<div class="view-room-container"><button class="view-room-button" onclick="window.location.href=\'' . esc_url($url) . '\'">View Baby Room</button></div>'; 
+
+
     // Copy address button
     $output .= '<div class="copy-address-container"><button id="copyAddressButton" class="copy-address-button" data-address="' . esc_attr($shipping_address) . '">Copy Shipping Address</button></div>';
 
@@ -203,6 +223,7 @@ function get_registry_items($registry_id, $category_filters = []) {
             $image_html = $image_url ? "<img src='{$image_url}' alt='" . esc_attr($product->post_title) . "' class='registry-item-image' />" : '';
             $quantity_needed = max(0, $product->quantity - $product->purchased_quantity);
             $external_url = get_post_meta($product->ID, '_product_url', true); // Get external URL
+            $button_text = get_post_meta($product->ID, '_button_text', true) ?: 'Buy Now'; // Get button text or use default
 
             $output .= "<li class='registry-item'>
                           <div class='registry-item-content'>
@@ -219,7 +240,7 @@ function get_registry_items($registry_id, $category_filters = []) {
                               </form>";
 
             if (!empty($external_url)) {
-                 $output .= "<button class='affiliate-link-button' onclick=\"window.open('" . esc_url($external_url) . "', '_blank')\">Buy Now</button>";
+                 $output .= "<button class='affiliate-link-button' onclick=\"window.open('" . esc_url($external_url) . "', '_blank')\">" . esc_html($button_text) . "</button>";
             }
 
             if (is_user_logged_in() && $registry->user_id == get_current_user_id()) {
@@ -408,17 +429,17 @@ function registry_image($baby_room) {
         // Check if registry_url is not empty and use it if available
         if (!empty($registry->registry_url)) {
             // Directly use the registry_url as redirect_url
-            $redirect_url = $registry->registry_url;
+            $room_url = $registry->registry_url;
         } else {
             // Define URL options based on baby_room
-            $redirect_url = $registry->baby_room == 2 ? 'https://metazone.store/?page_id=636' : 'https://metazone.store/?page_id=636';
+            $room_url = $registry->baby_room == 2 ? 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html' : 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html';
         }
 
         // Construct the final URL by adding query arguments for registry_id and redirect_url
         $url = add_query_arg([
             'registry_id' => $registry->registry_id,
-            'redirect_url' => urlencode($redirect_url)
-        ], 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html');
+            'redirect_url' => 'https://metazone.store/?page_id=636'
+        ], $room_url);
 
         $output .= '<li class="registry-item">';
         $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" class="registry-item-image">';
@@ -427,7 +448,7 @@ function registry_image($baby_room) {
         $output .= '<p class="registry-item-due-date">Due Date: ' . esc_html($registry->due_date) . '</p>';
         $output .= '<div class="button-container">';
         $output .= '<button class="button registry-item-button styled-button" onclick="window.location.href=\'' . esc_url($url) . '\'">Enter Registry</button>';
-        $output .= '<button class="button registry-item-share-button styled-button" data-redirect-url="' . esc_url($redirect_url) . '" data-registry-id="' . esc_attr($registry->registry_id) . '">Share Registry</button>';
+        $output .= '<button class="button registry-item-share-button styled-button" data-redirect-url="' . esc_url('https://metazone.store/?page_id=636') . '" data-registry-id="' . esc_attr($registry->registry_id) . '">Share Registry</button>';
         $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry->registry_id) . '">Delete Registry</button>';
         $output .= '</div>';
         $output .= '</li>';

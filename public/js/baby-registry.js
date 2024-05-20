@@ -95,7 +95,7 @@ jQuery(document).ready(function($) {
         copyToClipboard(address);
     });
 
-    // Existing form submission code
+    // registry item quantity form submission 
     $('.registry-item-form').on('submit', function(e) {
         e.preventDefault();
 
