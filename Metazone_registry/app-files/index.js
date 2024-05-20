@@ -350,7 +350,6 @@
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
 
-
     // Extract registry_id and redirect_url from URL
     var registryId = getParameterByName('registry_id');
     var redirectUrl = getParameterByName('redirect_url'); // This should be a complete URL
@@ -363,7 +362,7 @@
 
     console.log('Redirect URL after decoding or default:', redirectUrl);
 
-        // Check if hotspot.text is an array and join it, otherwise handle as string
+    // Check if hotspot.text is an array and join it, otherwise handle as string
     var hotspotTextArray = Array.isArray(hotspot.text) ? hotspot.text : [hotspot.text];
     console.log('hotspotTextArray:', hotspotTextArray);
 
@@ -372,11 +371,11 @@
 
     // Loop through each element in the array and create a list item with a link
     hotspotTextArray.forEach(function(category) {
-        var encodedCategory = encodeURIComponent(category);
+        var decodedCategory = decodeURIComponent(category);
         var url = new URL(redirectUrl);
         var urlParams = new URLSearchParams(url.search);
         urlParams.set('registry_id', registryId);
-        urlParams.set('category_filters', encodedCategory);
+        urlParams.set('category_filters', decodedCategory); // Use the decoded category directly
         url.search = urlParams.toString();
         var categoryUrl = url.href;
 
@@ -393,7 +392,6 @@
     <style>
         .info-hotspot-text ul li a:hover {
             color: #AAD338;
-            // text-decoration: underline;
         }
     </style>
     `;

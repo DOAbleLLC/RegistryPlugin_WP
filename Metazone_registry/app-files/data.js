@@ -34,7 +34,7 @@ var APP_DATA = {
           "yaw": -0.02355384712151576,
           "pitch": 0.14275429989615063,
           "title": "Nursery",
-          "text": ["sleeping", "Nursery and Decor" ]
+          "text": ["Sleeping", "Nursery and Decor" ]
         },
         {
           "yaw": 0.5212151477897677,

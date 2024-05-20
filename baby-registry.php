@@ -136,10 +136,15 @@ function get_registry_items($registry_id, $category_filters = []) {
 
     // Override shortcode attributes with URL query parameters if they exist
     $registry_id = empty($_GET['registry_id']) ? intval($attributes['registry_id']) : intval($_GET['registry_id']);
-    $category_filters_from_url = isset($_GET['category_filters']) ? explode(',', sanitize_text_field($_GET['category_filters'])) : [];
+    
+    // Decode the category_filters parameter
+    $category_filters_from_url = isset($_GET['category_filters']) ? explode(',', urldecode(sanitize_text_field($_GET['category_filters']))) : [];
     $category_filters_from_atts = explode(',', sanitize_text_field($attributes['category_filters']));
     $category_filters = array_filter(array_unique(array_merge($category_filters_from_atts, $category_filters_from_url)));
 
+    // Log the parameters for debugging
+    error_log('Registry ID: ' . $registry_id);
+    error_log('Category Filters: ' . print_r($category_filters, true));
 
     // Fetch registry details
     $registry_details_table = $wpdb->prefix . "baby_registry_details";
@@ -191,7 +196,6 @@ function get_registry_items($registry_id, $category_filters = []) {
     // Add View Room button
     $output .= '<div class="view-room-container"><button class="view-room-button" onclick="window.location.href=\'' . esc_url($url) . '\'">View Baby Room</button></div>'; 
 
-
     // Copy address button
     $output .= '<div class="copy-address-container"><button id="copyAddressButton" class="copy-address-button" data-address="' . esc_attr($shipping_address) . '">Copy Shipping Address</button></div>';
 
@@ -208,10 +212,23 @@ function get_registry_items($registry_id, $category_filters = []) {
     );
 
     if (!empty($category_filters)) {
-        $placeholders = implode(', ', array_fill(0, count($category_filters), '%s'));
-        $query .= $wpdb->prepare(" AND p.ID IN (SELECT object_id FROM {$wpdb->prefix}term_relationships tr JOIN {$wpdb->prefix}term_taxonomy tt ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tt.term_id IN ($placeholders))", $category_filters);
+        // Get term IDs for category filters
+        $term_ids = [];
+        foreach ($category_filters as $filter) {
+            $term = get_term_by('name', $filter, 'product_cat');
+            if ($term) {
+                $term_ids[] = $term->term_id;
+            }
+        }
+        error_log('Term IDs: ' . print_r($term_ids, true));
+
+        if (!empty($term_ids)) {
+            $placeholders = implode(', ', array_fill(0, count($term_ids), '%d'));
+            $query .= $wpdb->prepare(" AND p.ID IN (SELECT object_id FROM {$wpdb->prefix}term_relationships tr JOIN {$wpdb->prefix}term_taxonomy tt ON tr.term_taxonomy_id = tt.term_taxonomy_id WHERE tt.term_id IN ($placeholders))", ...$term_ids);
+        }
     }
 
+    error_log('Final Query: ' . $query);
     $items = $wpdb->get_results($query);
 
     // Display the items in a grid
@@ -246,7 +263,6 @@ function get_registry_items($registry_id, $category_filters = []) {
             if (is_user_logged_in() && $registry->user_id == get_current_user_id()) {
                 $output .= '<button class="remove-from-registry-button" data-product-id="' . esc_attr($product->ID) . '" data-registry-id="' . esc_attr($registry_id) . '">Remove from Registry</button>';
             }
-
 
             $output .= "</div></div></li>";
         }
