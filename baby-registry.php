@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce Baby Registry
 Plugin URI: https://github.com/DOAbleLLC/RegistryPlugin_WP
 Description: Enables a baby registry feature for WooCommerce stores.
-Version: 1.2
+Version: 1.2.1
 Author: Psyscho bit
 This plugin was styled using the Astra WP theme 
 */
@@ -471,13 +471,17 @@ function registry_image($baby_room) {
             'redirect_url' => 'https://metazone.store/?page_id=636'
         ], $room_url);
 
+        // Construct the registry URL (redirect_url + registry_id)
+        $registry_url = 'https://metazone.store/?page_id=636&registry_id=' . $registry->registry_id;
+
         $output .= '<li class="registry-item">';
         $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" class="registry-item-image">';
         $output .= '<h3 class="registry-item-title">' . esc_html($registry->registry_name) . '</h3>';
         $output .= '<p class="registry-item-description">Purpose: ' . esc_html($registry->registry_description) . '</p>';
         $output .= '<p class="registry-item-due-date">Due Date: ' . esc_html($registry->due_date) . '</p>';
         $output .= '<div class="button-container">';
-        $output .= '<button class="button registry-item-button styled-button" onclick="window.location.href=\'' . esc_url($url) . '\'">Enter Registry</button>';
+        $output .= '<button class="button registry-item-button styled-button" onclick="window.location.href=\'' . esc_url($url) . '\'">Enter Baby Room</button>';
+        $output .= '<button class="button registry-item-button styled-button" onclick="window.location.href=\'' . esc_url($registry_url) . '\'">Enter Registry</button>';
         $output .= '<button class="button registry-item-share-button styled-button" data-redirect-url="' . esc_url('https://metazone.store/?page_id=636') . '" data-registry-id="' . esc_attr($registry->registry_id) . '">Share Registry</button>';
         $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry->registry_id) . '">Delete Registry</button>';
         $output .= '</div>';

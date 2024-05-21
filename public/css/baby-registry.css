@@ -47,7 +47,7 @@
 }
 
 .deleteRegistryButton:hover {
-    background-color: #ff9131;
+    background-color: #AAD338;
 }
 
 .add-to-registry-button {
@@ -171,11 +171,11 @@
 }
 
 .remove-from-registry-button:hover {
-    background-color: #ff9131;
+    background-color: #AAD338;
 }
 
 .delete-registry-button:hover {
-    background-color: #ff9131;
+    background-color: #AAD338;
 }
 
 /* Responsive adjustments */
