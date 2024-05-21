@@ -149,7 +149,7 @@ function get_registry_items($registry_id, $category_filters = []) {
     // Fetch registry details
     $registry_details_table = $wpdb->prefix . "baby_registry_details";
     $registry = $wpdb->get_row($wpdb->prepare(
-        "SELECT registry_name, user_id FROM $registry_details_table WHERE registry_id = %d",
+        "SELECT registry_name, user_id, registry_url, baby_room FROM $registry_details_table WHERE registry_id = %d",
         $registry_id
     ));
 
@@ -177,11 +177,19 @@ function get_registry_items($registry_id, $category_filters = []) {
         $output .= '<button id="deleteRegistryButton" class="delete-registry-button" data-registry-id="' . esc_attr($registry_id) . '">Delete Registry</button>';
     }
 
-    // Determine the redirect URL
+    // Determine the room URL based on registry_url and baby_room
     if (!empty($registry->registry_url)) {
-        $redirect_url = $registry->registry_url;
+        $room_url = $registry->registry_url;
+        $output .= "<script>console.log('Using custom registry_url: " . esc_js($room_url) . "');</script>";
     } else {
-        $redirect_url = $registry->baby_room == 2 ? 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html' : 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html';
+        $output .= "<script>console.log('baby_room value: " . esc_js($registry->baby_room) . "');</script>";
+        if ($registry->baby_room == 1) {
+            $room_url = 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry2/app-files/index.html';
+            $output .= "<script>console.log('Setting room_url to Metazone_registry2');</script>";
+        } else {
+            $room_url = 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html';
+            $output .= "<script>console.log('Setting room_url to Metazone_registry');</script>";
+        }
     }
 
     // Get the current page URL without query args
@@ -191,7 +199,7 @@ function get_registry_items($registry_id, $category_filters = []) {
     $url = add_query_arg([
         'registry_id' => $registry_id,
         'redirect_url' => urlencode($current_url)
-    ], $redirect_url);
+    ], $room_url);
 
     // Add View Room button
     $output .= '<div class="view-room-container"><button class="view-room-button" onclick="window.location.href=\'' . esc_url($url) . '\'">View Baby Room</button></div>'; 
@@ -274,6 +282,7 @@ function get_registry_items($registry_id, $category_filters = []) {
     return $output;
 }
 add_shortcode('baby_registry', 'display_baby_registry');
+
 
 
 
@@ -437,18 +446,23 @@ function registry_image($baby_room) {
     }
 
     $output = '<ul class="user-registries">';
-        foreach ($registries as $registry) {
+    foreach ($registries as $registry) {
         // Use thumbnail_url if it's not empty, otherwise use registry_image function
         $image_url = !empty($registry->thumbnail_url) ? $registry->thumbnail_url : registry_image($registry->baby_room);
 
-
-        // Check if registry_url is not empty and use it if available
+        // Determine the room URL based on registry_url and baby_room
         if (!empty($registry->registry_url)) {
-            // Directly use the registry_url as redirect_url
             $room_url = $registry->registry_url;
+            $output .= "<script>console.log('Using custom registry_url: " . esc_js($room_url) . "');</script>";
         } else {
-            // Define URL options based on baby_room
-            $room_url = $registry->baby_room == 2 ? 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html' : 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html';
+            $output .= "<script>console.log('baby_room value: " . esc_js($registry->baby_room) . "');</script>";
+            if ($registry->baby_room == 1) {
+                $room_url = 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry2/app-files/index.html';
+                $output .= "<script>console.log('Setting room_url to Metazone_registry2');</script>";
+            } else {
+                $room_url = 'https://metazone.store/wp-content/plugins/babyregistry/Metazone_registry/app-files/index.html';
+                $output .= "<script>console.log('Setting room_url to Metazone_registry');</script>";
+            }
         }
 
         // Construct the final URL by adding query arguments for registry_id and redirect_url
@@ -460,7 +474,7 @@ function registry_image($baby_room) {
         $output .= '<li class="registry-item">';
         $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" class="registry-item-image">';
         $output .= '<h3 class="registry-item-title">' . esc_html($registry->registry_name) . '</h3>';
-        $output .= '<p class="registry-item-description">Description: ' . esc_html($registry->registry_description) . '</p>';
+        $output .= '<p class="registry-item-description">Purpose: ' . esc_html($registry->registry_description) . '</p>';
         $output .= '<p class="registry-item-due-date">Due Date: ' . esc_html($registry->due_date) . '</p>';
         $output .= '<div class="button-container">';
         $output .= '<button class="button registry-item-button styled-button" onclick="window.location.href=\'' . esc_url($url) . '\'">Enter Registry</button>';
@@ -842,7 +856,7 @@ function create_baby_registry($user_id, $names, $description = '', $due_date = '
     $output .= '<input type="text" id="registry_name1" name="registry_name1" placeholder="Enter Name" required>';
     $output .= '<label for="registry_name2">Second Parent Name:</label>';
     $output .= '<input type="text" id="registry_name2" name="registry_name2" placeholder="Enter Name">';
-    $output .= '<label for="registry_description">Description:</label>';
+    $output .= '<label for="registry_description">Purpose:</label>';
     $output .= '<textarea id="registry_description" name="registry_description" placeholder="Enter Registry Description"></textarea>';
     $output .= '<label for="due_date">Due Date:</label>';
     $output .= '<input type="date" id="due_date" name="due_date">';

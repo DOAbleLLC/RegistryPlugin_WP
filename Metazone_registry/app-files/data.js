@@ -31,7 +31,7 @@ var APP_DATA = {
       "linkHotspots": [],
       "infoHotspots": [
         {
-          "yaw": -0.02355384712151576,
+          "yaw": -0.09355384712151576,
           "pitch": 0.14275429989615063,
           "title": "Nursery",
           "text": ["Sleeping", "Nursery and Decor" ]
@@ -43,13 +43,13 @@ var APP_DATA = {
           "text": ["Lighting", "Nursery and Decor" ]
         },
         {
-          "yaw": 1.5634508905629154,
+          "yaw": 1.4934508905629154,
           "pitch": -0.013881222420183192,
           "title": "Closet",
           "text": ["Clothing and Accessories", "Nursing and feeding", "Car Seats Strollers and Carriers" ]
         },
         {
-          "yaw": 3.129973916149332,
+          "yaw": 3.059973916149332,
           "pitch": 0.32351805272890033,
           "title": "Dresser",
           "text": ["Nursery and Decor", "Nursing and feeding", "Clothing and Accessories", "Dipering", "Health and Wellness" ]
@@ -61,13 +61,13 @@ var APP_DATA = {
           "text": ["Toys and Activities"]
         },
         {
-          "yaw": -0.7994895343339437,
+          "yaw": -0.8994895343339437,
           "pitch": 0.207670034894889,
           "title": "Lounge Chair",
           "text": ["Furniture", "Nursery and Decor", "Nursing and feeding" ]
         },
         {
-          "yaw": 3.122744520218734,
+          "yaw": 3.059973916149332,
           "pitch": -0.12033027253531614,
           "title": "Wall Art",
           "text": ["Toys and Activities", "Nursery and Decor", "Furniture", "Monitors and Cameras" ]
