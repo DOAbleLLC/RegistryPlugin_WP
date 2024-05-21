@@ -866,7 +866,7 @@ function create_baby_registry($user_id, $names, $description = '', $due_date = '
     $output .= '<input type="date" id="due_date" name="due_date">';
 
     // Dropdown for baby_room
-    $output .= '<label for="baby_room">Baby Room Number:</label>';
+    $output .= '<label for="baby_room">Baby Room Style:</label>';
     $output .= '<select id="baby_room" name="baby_room" class="styled-select">';
     $output .= '<option value="0">Room 1 - Modern Theme</option>';
     $output .= '<option value="1">Room 2 - Traditional Theme</option>';
