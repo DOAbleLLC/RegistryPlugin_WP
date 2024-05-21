@@ -475,7 +475,7 @@ function registry_image($baby_room) {
         $registry_url = 'https://metazone.store/?page_id=636&registry_id=' . $registry->registry_id;
 
         $output .= '<li class="registry-item">';
-        $output .= '<img src="' . esc_url($image_url) . '" alt="Registry Image" class="registry-item-image">';
+        $output .= '<a href="' . esc_url($url) . '"><img src="' . esc_url($image_url) . '" alt="Registry Image" class="registry-item-image"></a>';
         $output .= '<h3 class="registry-item-title">' . esc_html($registry->registry_name) . '</h3>';
         $output .= '<p class="registry-item-description">Purpose: ' . esc_html($registry->registry_description) . '</p>';
         $output .= '<p class="registry-item-due-date">Due Date: ' . esc_html($registry->due_date) . '</p>';
