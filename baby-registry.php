@@ -842,15 +842,15 @@ function create_baby_registry($user_id, $names, $description = '', $due_date = '
 
             // Check the result and provide feedback
             if (is_wp_error($registry_creation_result)) {
-                $output .= '<p>Error: ' . $registry_creation_result->get_error_message() . '</p>';
+                $output .= '<p style="color: red;">Error: ' . $registry_creation_result->get_error_message() . '</p>';
             } else {
-                $output .= '<p>Registry created successfully! ' . $registry_creation_result . '</p>';
+                $output .= '<p style="color: green;">Registry created successfully! ' . $registry_creation_result . '</p>';
                 if ($baby_room == 2) { // Check if the third option was selected
                     $output .= '<script>window.location.href = "https://metazone.store/?page_id=685";</script>'; // Redirect using JavaScript
                 }
             }
         } else {
-            $output .= '<p>You must be logged in to create a registry.</p>';
+            $output .= '<p style="color: orange;">You must be logged in to create a registry.</p>';
         }
     }
 
